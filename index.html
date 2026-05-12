@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutriobox Operations Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0a0f1c;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .header h1 {
+      font-size: 28px; font-weight: 700;
+      color: #10b981; letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+    .header p { color: rgba(255,255,255,0.4); font-size: 14px; }
+    .last-updated {
+      display: inline-block; margin-top: 12px;
+      padding: 6px 16px; border-radius: 20px;
+      background: rgba(16,185,129,0.1);
+      color: #10b981; font-size: 12px; font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(16,185,129,0.2);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .card-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; font-size: 24px;
+    }
+    .card-icon.green { background: rgba(16,185,129,0.1); }
+    .card-icon.blue { background: rgba(59,130,246,0.1); }
+    .card-icon.amber { background: rgba(245,158,11,0.1); }
+    .card-icon.purple { background: rgba(139,92,246,0.1); }
+    .card h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+    .card .date { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 12px; }
+    .empty-msg {
+      text-align: center; padding: 60px 20px;
+      color: rgba(255,255,255,0.3);
+    }
+    .empty-msg h3 { font-size: 18px; margin-bottom: 8px; }
+    .footer {
+      text-align: center; margin-top: 48px;
+      color: rgba(255,255,255,0.15); font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>NUTRIOBOX</h1>
+      <p>Operations Dashboard</p>
+      <div class="last-updated">Last Updated: May 12, 2026</div>
+    </div>
+
+    <div class="grid">
+      <!-- Daily Operations Dashboard -->
+      <a href="operations-daily.html" class="card">
+        <div class="card-icon green">📊</div>
+        <h3>Daily Operations Report</h3>
+        <p>Cold storage metrics, inventory levels, dispatch status, and daily KPIs</p>
+        <div class="date">Updated daily</div>
+      </a>
+
+      <!-- Sales Dashboard -->
+      <a href="sales-dashboard.html" class="card">
+        <div class="card-icon blue">💰</div>
+        <h3>Sales Dashboard</h3>
+        <p>Revenue tracking, order pipeline, customer-wise sales, and payment status</p>
+        <div class="date">Updated daily</div>
+      </a>
+
+      <!-- Discount Codes -->
+      <a href="discount-codes.html" class="card">
+        <div class="card-icon amber">🏷️</div>
+        <h3>Discount Codes Report</h3>
+        <p>Active discount codes, usage stats, and redemption tracking</p>
+        <div class="date">Updated daily</div>
+      </a>
+
+      <!-- Add more reports here as needed -->
+      <a href="#" class="card">
+        <div class="card-icon purple">➕</div>
+        <h3>More Reports Coming</h3>
+        <p>Additional dashboards and reports will be added here as needed</p>
+        <div class="date">Placeholder</div>
+      </a>
+    </div>
+
+    <div class="footer">
+      <p>Nutriobox Pvt Ltd &bull; Sector 63, Noida &bull; Internal Use Only</p>
+    </div>
+  </div>
+</body>
+</html>

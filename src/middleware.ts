@@ -1,37 +1,47 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// Protect /dashboard and anything below it.
+// Office IPs - apna office ka public IP yahan daalo
+const ALLOWED_IPS = [
+  'YOUR_OFFICE_IP_HERE',  // Noida office IP
+  // Add more IPs if needed
+];
+
+// IP restriction sirf non-logged-in users ke liye
+// Logged-in users (3 laptops) kahi se bhi access kar sakte hain
+const IP_RESTRICTED = process.env.ENABLE_IP_RESTRICTION === 'true';
+
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  const response = NextResponse.next();
 
+  // Check IP restriction for login page
+  if (IP_RESTRICTED) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const isAllowedIP = ALLOWED_IPS.some(allowed => ip.startsWith(allowed));
+    const isLoginPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup';
+
+    // Block access to login/signup from unknown IPs
+    if (isLoginPage && !isAllowedIP) {
+      return new NextResponse('Access Denied', { status: 403 });
+    }
+  }
+
+  // Supabase auth check for dashboard
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
-          response.cookies.set({ name, value: '', ...options });
-        }
-      }
+        getAll: () => request.cookies.getAll().map(c => ({ name: c.name, value: c.value })),
+        setAll: (cookies) => cookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options)),
+      },
     }
   );
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -39,5 +49,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*']
+  matcher: ['/dashboard/:path*', '/login', '/signup'],
 };

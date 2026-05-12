@@ -1,0 +1,13 @@
+{
+  "name": "nutriobox-operations-dashboard",
+  "version": "1.0.0",
+  "description": "Nutriobox Operations Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1"
+  }
+}

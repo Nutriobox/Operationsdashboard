@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 
 // Office IPs - apna office ka public IP yahan daalo
 const ALLOWED_IPS = [
-  'YOUR_OFFICE_IP_HERE',  // Noida office IP
+  '122.176.138.21',  // Noida office IP
   // Add more IPs if needed
 ];
 

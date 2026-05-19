@@ -9,10 +9,10 @@ const root = process.cwd();
 const standaloneDir = resolve(root, '.next', 'standalone');
 
 if (!existsSync(standaloneDir)) {
-  console.error(
-    '[copy-standalone-assets] .next/standalone not found — is `output: "standalone"` set in next.config.js?'
+  console.log(
+    '[copy-standalone-assets] .next/standalone not found — assuming non-standalone build, skipping copy.'
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 const publicSrc = resolve(root, 'public');

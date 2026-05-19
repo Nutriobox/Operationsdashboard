@@ -18,18 +18,20 @@ export default function DashboardChrome({
   const isHome = pathname === '/dashboard';
 
   // 3.5rem = h-14 navbar height.
+  // backgroundSize: 'contain' shows the entire image without cropping; the
+  // green fallback colour fills any letterboxed area on aspect-ratio mismatch.
   const homeStyle: React.CSSProperties = {
     minHeight: 'calc(100vh - 3.5rem)',
     backgroundImage: "url('/nutriobox-bg.jpg')",
     backgroundColor: '#7BAE3E',
-    backgroundSize: 'cover',
+    backgroundSize: 'contain',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat'
   };
 
   if (isHome) {
     return (
-      <div style={homeStyle} className="flex items-center justify-center">
+      <div style={homeStyle} className="flex items-start justify-center pt-6">
         <DashboardNav />
       </div>
     );

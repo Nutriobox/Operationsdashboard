@@ -4,3 +4,13 @@ node_modules
 .env.local
 .DS_Store
 *.log
+
+# Dashboard HTML is too large for git (>100 MB). Hosted via Supabase Storage.
+public/sales-dashboard.html
+
+# Diagnostic scripts and temp files left from troubleshooting.
+RUN-fix-and-push.bat
+fix-and-push.ps1
+push-background-change.bat
+testfile
+testfile2

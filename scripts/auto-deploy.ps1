@@ -37,6 +37,17 @@ if (-not (Test-Path $ProjectRoot)) {
     exit 1
 }
 
+# Step 0: upload the latest dashboard HTML to Supabase Storage.
+# Done first because if the dashboard hasn't changed there's nothing to push.
+$uploadScript = Join-Path $ProjectRoot 'scripts\upload-dashboard.ps1'
+if (Test-Path $uploadScript) {
+    Log "Running upload-dashboard.ps1..."
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $uploadScript | Out-Null
+    Log "Upload step finished (exit $LASTEXITCODE)."
+} else {
+    Log "upload-dashboard.ps1 not found; skipping Supabase upload." 'WARN'
+}
+
 # Defensive: clear any corrupt index that might be lingering.
 $statusProbe = & git -C $ProjectRoot status --porcelain 2>&1
 if ($LASTEXITCODE -ne 0) {

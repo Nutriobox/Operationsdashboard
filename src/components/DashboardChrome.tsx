@@ -14,8 +14,10 @@ export default function DashboardChrome({
 }) {
   const pathname = usePathname();
   // /dashboard is the launcher screen — full-page background image, just the buttons.
-  // Sub-routes (/dashboard/sales-item, etc.) show the welcome header + buttons + report.
+  // /dashboard/sales-item is a full-bleed report viewer — no chrome at all.
+  // Other sub-routes show the welcome header + buttons + report.
   const isHome = pathname === '/dashboard';
+  const isSalesItem = pathname === '/dashboard/sales-item';
 
   // 3.5rem = h-14 navbar height.
   // backgroundSize: 'contain' shows the entire image without cropping; the
@@ -35,6 +37,11 @@ export default function DashboardChrome({
         <DashboardNav />
       </div>
     );
+  }
+
+  // Sales Item: render the report alone, no welcome header, no nav tabs.
+  if (isSalesItem) {
+    return <>{children}</>;
   }
 
   return (

@@ -59,7 +59,30 @@ if ($null -eq $latest) {
 $sizeMb = [math]::Round($latest.Length / 1MB, 2)
 Log ("Latest report: {0} ({1} MB, modified {2})" -f $latest.Name, $sizeMb, $latest.LastWriteTime)
 
-# 3. Skip if Supabase already has the same byte count
+# 3. Supabase Free plan caps files at 50 MB. The raw HTML is often well over
+#    that, but it gzip-compresses dramatically (Plotly/embedded data is mostly
+#    text). Compress to a temp file first.
+$gzPath = Join-Path $env:TEMP 'nutriobox-sales-dashboard.html.gz'
+if (Test-Path $gzPath) { Remove-Item $gzPath -Force }
+
+Log "Gzipping..."
+$inStream  = [System.IO.File]::OpenRead($latest.FullName)
+$outStream = [System.IO.File]::Create($gzPath)
+$gzStream  = New-Object System.IO.Compression.GZipStream($outStream, [System.IO.Compression.CompressionLevel]::Optimal)
+$inStream.CopyTo($gzStream)
+$gzStream.Close(); $outStream.Close(); $inStream.Close()
+
+$gzFile = Get-Item $gzPath
+$gzMb = [math]::Round($gzFile.Length / 1MB, 2)
+Log ("Compressed: {0} MB (from {1} MB, ratio {2}%)" -f $gzMb, $sizeMb, [math]::Round(100 * $gzFile.Length / $latest.Length, 1))
+
+if ($gzFile.Length -gt 50MB) {
+    Log "Compressed file still over 50 MB. Supabase Free plan cannot accept it." 'ERROR'
+    Log "Options: (1) upgrade Supabase Pro, (2) host on Cloudflare R2, (3) trim the dashboard." 'ERROR'
+    exit 1
+}
+
+# 4. Skip if Supabase already has the same byte count for the compressed file.
 $publicUrl  = "$supabaseUrl/storage/v1/object/public/$BucketName/$ObjectKey"
 $uploadUrl  = "$supabaseUrl/storage/v1/object/$BucketName/$ObjectKey"
 
@@ -67,17 +90,18 @@ try {
     $head = Invoke-WebRequest -Uri $publicUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue
     if ($head -and $head.Headers['Content-Length']) {
         $remoteSize = [int64]$head.Headers['Content-Length']
-        if ($remoteSize -eq $latest.Length) {
-            Log "Supabase copy is already the same size ($remoteSize bytes). Skipping upload."
+        if ($remoteSize -eq $gzFile.Length) {
+            Log "Supabase copy already matches compressed size ($remoteSize bytes). Skipping upload."
             Log "---- upload-dashboard finished (no-op) ----"
             exit 0
         }
     }
 } catch {
-    # 404 or other — proceed to upload
+    # 404 or other - proceed to upload
 }
 
-# 4. Upload via curl.exe (PowerShell's Invoke-* struggles with large binary uploads).
+# 5. Upload via curl.exe. Set Content-Encoding: gzip so browsers transparently
+#    decompress; the iframe URL still loads as HTML.
 Log ("Uploading to {0}" -f $uploadUrl)
 $curlArgs = @(
     '-X','POST',
@@ -85,8 +109,10 @@ $curlArgs = @(
     '-H', ("apikey: {0}" -f $secretKey),
     '-H', ("Authorization: Bearer {0}" -f $secretKey),
     '-H', 'Content-Type: text/html',
+    '-H', 'Content-Encoding: gzip',
+    '-H', 'Cache-Control: no-cache',
     '-H', 'x-upsert: true',
-    '--data-binary', ("@{0}" -f $latest.FullName),
+    '--data-binary', ("@{0}" -f $gzFile.FullName),
     '--silent', '--show-error',
     '--write-out', 'HTTP_STATUS=%{http_code}'
 )

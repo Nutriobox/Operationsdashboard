@@ -23,15 +23,12 @@ export default async function Navbar() {
               <LogoutButton />
             </>
           ) : (
-            <>
-              <Link href="/login" className="hover:text-brand">Log in</Link>
-              <Link
-                href="/signup"
-                className="px-3 py-1.5 rounded bg-brand text-white hover:bg-brand-dark"
-              >
-                Sign up
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="px-3 py-1.5 rounded bg-brand text-white hover:bg-brand-dark"
+            >
+              Log in
+            </Link>
           )}
         </div>
       </div>

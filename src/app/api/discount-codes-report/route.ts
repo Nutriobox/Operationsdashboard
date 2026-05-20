@@ -1,7 +1,7 @@
 // Proxies the latest discount codes report from Supabase Storage.
-// Same pattern as /api/sales-dashboard — re-serves the bytes from our origin
-// with proper text/html headers, avoiding Supabase's sandbox CSP that would
-// otherwise block any JS / styles inside the iframe.
+// Re-serves the bytes from our own origin with text/html headers so the
+// iframe renders correctly (Supabase serves storage objects with a sandbox
+// CSP and text/plain mime, both of which break in-browser rendering).
 import { NextResponse } from 'next/server';
 
 const SUPABASE_URL =
@@ -11,22 +11,21 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const upstream = await fetch(SUPABASE_URL, {
-    headers: { 'Accept-Encoding': 'gzip' },
-    cache: 'no-store',
-  });
+  const upstream = await fetch(SUPABASE_URL, { cache: 'no-store' });
 
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream.ok) {
     return new NextResponse(`Failed to fetch report (status ${upstream.status})`, {
       status: 502,
     });
   }
 
-  const headers = new Headers();
-  headers.set('Content-Type', 'text/html; charset=utf-8');
-  headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-  const enc = upstream.headers.get('content-encoding');
-  if (enc) headers.set('Content-Encoding', enc);
+  const html = await upstream.text();
 
-  return new NextResponse(upstream.body, { status: 200, headers });
+  return new NextResponse(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+    },
+  });
 }

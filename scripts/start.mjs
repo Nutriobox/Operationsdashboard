@@ -1,7 +1,4 @@
-// Standalone Next.js server (.next/standalone/server.js) defaults to binding on
-// `localhost`. On Railway (and most container hosts) the proxy can only reach
-// the app if it listens on 0.0.0.0. PORT is set by Railway automatically;
-// fall back to 3000 for local runs.
-process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
-process.env.PORT = process.env.PORT || '3000';
-await import('../.next/standalone/server.js');
+// Deprecated. Kept as a no-op for historical reference. We moved from
+// Railway (which used standalone server.js) to Vercel (which handles
+// startup itself). package.json's "start" script no longer references
+// this file. Safe to delete in a future cleanup.

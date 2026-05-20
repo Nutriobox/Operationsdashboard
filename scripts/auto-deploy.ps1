@@ -37,6 +37,11 @@ if (-not (Test-Path $ProjectRoot)) {
     exit 1
 }
 
+# Make sure commits are authored with an email that's verified on GitHub.
+# Vercel blocks deploys when the commit email doesn't match the GitHub account.
+& git -C $ProjectRoot config user.email "mayank@nutriobox.com" 2>$null
+& git -C $ProjectRoot config user.name "Nutriobox" 2>$null
+
 # Step 0: upload the latest dashboard HTML to Supabase Storage.
 # Done first because if the dashboard hasn't changed there's nothing to push.
 $uploadScript = Join-Path $ProjectRoot 'scripts\upload-dashboard.ps1'

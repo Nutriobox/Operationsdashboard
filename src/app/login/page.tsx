@@ -71,7 +71,7 @@ export default function LoginPage() {
         {/* Food image — bottom-left, positioned to overflow naturally */}
         <div className="absolute bottom-0 left-0 right-0 h-[45%] pointer-events-none">
           <Image
-            src="/NutrioBox_web banner (1).png"
+            src="/login-food.png"
             alt="Nutriobox meals"
             fill
             className="object-cover object-top"

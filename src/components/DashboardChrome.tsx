@@ -16,43 +16,43 @@ export default function DashboardChrome({
 }) {
   const pathname = usePathname();
   const isHome = pathname === '/dashboard';
+  const isSalesItem = pathname === '/dashboard/sales-item';
   const isFullPageReport =
-    pathname === '/dashboard/sales-item' ||
     pathname === '/dashboard/discount-codes' ||
     pathname === '/dashboard/delay';
 
-  /* ── Landing page: welcome header + dashboard cards ── */
-  /* SalesPreloadProvider starts loading the 116MB sales report in a hidden  */
-  /* iframe so it's ready by the time the user clicks through.              */
-  if (isHome) {
+  /* ── Landing page OR Sales Item: wrapped in SalesPreloadProvider ──
+     The provider keeps a single iframe alive across both routes.
+     On /dashboard it's hidden off-screen (preloading).
+     On /dashboard/sales-item it flips to visible (instant). */
+  if (isHome || isSalesItem) {
     return (
       <SalesPreloadProvider>
-        <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 to-white">
-          {/* Hero section */}
-          <div className="mx-auto max-w-7xl px-6 pt-12 pb-4">
-            <div className="animate-fade-in">
-              <p className="text-sm font-medium text-brand-600 tracking-wide uppercase">
-                Operations Hub
-              </p>
-              <h1 className="mt-2 text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
-                Welcome back, {name}
-              </h1>
-              <p className="mt-2 text-slate-500 text-base max-w-xl">
-                Access your dashboards and reports from one place. Select a dashboard below to get started.
-              </p>
+        {isHome ? (
+          <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 to-white">
+            <div className="mx-auto max-w-7xl px-6 pt-12 pb-4">
+              <div className="animate-fade-in">
+                <p className="text-sm font-medium text-brand-600 tracking-wide uppercase">
+                  Operations Hub
+                </p>
+                <h1 className="mt-2 text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+                  Welcome back, {name}
+                </h1>
+                <p className="mt-2 text-slate-500 text-base max-w-xl">
+                  Access your dashboards and reports from one place. Select a dashboard below to get started.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-7xl px-6 pt-4 pb-16 animate-slide-up">
+              <DashboardCards />
             </div>
           </div>
-
-          {/* Dashboard cards grid */}
-          <div className="mx-auto max-w-7xl px-6 pt-4 pb-16 animate-slide-up">
-            <DashboardCards />
-          </div>
-        </div>
+        ) : null}
       </SalesPreloadProvider>
     );
   }
 
-  /* ── Full-page reports: no chrome ── */
+  /* ── Other full-page reports (discount-codes, delay): no chrome ── */
   if (isFullPageReport) {
     return <>{children}</>;
   }
@@ -66,11 +66,9 @@ export default function DashboardChrome({
           Your <span className="capitalize font-medium text-slate-700">{segment}</span> plan dashboard
         </p>
       </header>
-
       <div className="mt-4 mb-6">
         <DashboardNav />
       </div>
-
       <div>{children}</div>
     </div>
   );

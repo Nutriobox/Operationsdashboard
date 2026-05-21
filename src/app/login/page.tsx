@@ -68,18 +68,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Food image — bottom-left, positioned to overflow naturally */}
-        <div className="absolute bottom-0 left-0 right-0 h-[45%] pointer-events-none">
-          <Image
-            src="/login-food.png"
-            alt="Nutriobox meals"
-            fill
-            className="object-cover object-top"
-            sizes="55vw"
-            priority
-          />
+        {/* Food image — bottom of the left panel */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[48%] pointer-events-none bg-cover bg-top"
+          style={{ backgroundImage: "url('/login-food.png')" }}
+        >
           {/* Fade overlay so food blends into cream background at top */}
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#f5f1eb] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#f5f1eb] to-transparent" />
         </div>
       </div>
 

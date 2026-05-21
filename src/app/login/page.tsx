@@ -28,63 +28,98 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#3d7c53] overflow-hidden flex">
+    <div className="relative min-h-screen overflow-hidden">
+      {/* ── Background: the original design image ── */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/Web-Banner-02.png')" }}
+      />
 
-      {/* ── Left side: branding + text ── */}
-      <div className="relative z-20 hidden lg:flex lg:w-[50%] flex-col justify-center px-14 xl:px-20">
-        {/* Nutriobox logo — use the PNG which has transparency */}
-        <div className="mb-10">
-          <Image
-            src="/nutriobox-logo.png"
-            alt="Nutriobox"
-            width={180}
-            height={52}
-            className="h-12 w-auto object-contain"
-            priority
-          />
-        </div>
+      {/* ── Patch: cover "Allsure Services Pvt. Ltd." with cream ── */}
+      <div
+        className="absolute top-0 left-0 z-10"
+        style={{ width: '39%', height: '15.5%', backgroundColor: '#f6f5f0' }}
+      />
 
-        {/* Floating label */}
-        <div className="flex items-center gap-3 mb-5">
-          <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm">
-            Sales analytics
-          </span>
-        </div>
+      {/* ── Patch: cover "Sukhna Foods + Nutriobox" logos in center ── */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: '57%',
+          left: '13%',
+          width: '32%',
+          height: '14%',
+          backgroundColor: '#f6f5f0',
+        }}
+      />
+      {/* Green patch for the right portion of the logo bar */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: '57%',
+          left: '45%',
+          width: '8%',
+          height: '14%',
+          backgroundColor: '#357953',
+        }}
+      />
 
-        {/* Main headline */}
-        <h1 className="text-5xl xl:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
-          Your operations,
-          <br />
-          simplified.
-        </h1>
+      {/* ── Patch: cover old food items at bottom-left ── */}
+      <div
+        className="absolute bottom-0 left-0 z-10"
+        style={{ width: '44%', height: '33%', backgroundColor: '#f6f5f0' }}
+      />
+      {/* Green patch for bottom-right of old food */}
+      <div
+        className="absolute bottom-0 z-10"
+        style={{ left: '44%', width: '10%', height: '33%', backgroundColor: '#357953' }}
+      />
 
-        <div className="flex flex-wrap items-center gap-3 mt-6">
-          <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm">
-            delivery insights
-          </span>
-          <span className="inline-flex items-center rounded-full bg-[#d4f542] px-4 py-1.5 text-sm font-medium text-slate-800 shadow-sm">
-            all reports in one dashboard
-          </span>
-        </div>
-
-        <p className="mt-8 text-white/70 text-base max-w-md leading-relaxed">
-          Track sales performance, monitor delivery delays, and access discount analytics — all from a single hub.
-        </p>
+      {/* ── Nutriobox logo — replaces Allsure text ── */}
+      <div className="absolute top-[3%] left-[2.5%] z-20">
+        <Image
+          src="/nutriobox-logo.png"
+          alt="Nutriobox"
+          width={220}
+          height={80}
+          className="h-16 w-auto object-contain"
+          priority
+        />
       </div>
 
-      {/* ── Right side: login card with food peeking around it ── */}
-      <div className="relative flex w-full lg:w-[50%] items-center justify-center px-6 py-12">
-        {/* Food image background — visible enough to see dishes peeking around the card */}
+      {/* ── New food image (Photo 3) at bottom ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 z-20 h-[42%] bg-cover bg-bottom bg-no-repeat"
+        style={{ backgroundImage: "url('/login-food.png')" }}
+      />
+      {/* Gradient blend at top of food image */}
+      <div className="absolute bottom-[30%] left-0 right-0 z-[21] h-[14%]">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-35"
-          style={{ backgroundImage: "url('/login-food.png')" }}
+          className="h-full w-[44%] float-left"
+          style={{
+            background: 'linear-gradient(to bottom, #f6f5f0, transparent)',
+          }}
         />
-        {/* Green overlay so card stays readable */}
-        <div className="absolute inset-0 bg-[#3d7c53]/40" />
+        <div
+          className="h-full"
+          style={{
+            background: 'linear-gradient(to bottom, #357953, transparent)',
+          }}
+        />
+      </div>
 
-        {/* White/cream rounded login card */}
-        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#f9f7f3] p-10 shadow-2xl">
-          {/* Mobile logo — only visible on small screens */}
+      {/* ── Login form — positioned over the white card in the image ── */}
+      <div
+        className="absolute z-30 flex items-center justify-center"
+        style={{
+          top: '14%',
+          right: '3%',
+          width: '35%',
+          height: '60%',
+        }}
+      >
+        <div className="w-full max-w-sm px-6">
+          {/* Mobile logo fallback */}
           <div className="mb-6 lg:hidden flex justify-center">
             <Image
               src="/nutriobox-brand-logo.jpg"
@@ -109,7 +144,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
                 placeholder="you@nutriobox.com"
               />
             </div>
@@ -120,7 +155,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
                 placeholder="••••••••"
               />
             </div>
@@ -140,16 +175,6 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-      </div>
-
-      {/* ── Decorative food image — bottom-left, well below text ── */}
-      <div
-        className="hidden lg:block absolute -bottom-4 left-0 w-[48%] h-[30%] pointer-events-none z-10 bg-cover bg-bottom bg-no-repeat"
-        style={{ backgroundImage: "url('/login-food.png')" }}
-      />
-      {/* Gradient to blend food into the green bg at top edge */}
-      <div className="hidden lg:block absolute bottom-0 left-0 w-[48%] h-[34%] pointer-events-none z-[11]">
-        <div className="h-20 bg-gradient-to-b from-[#3d7c53] to-transparent" />
       </div>
     </div>
   );

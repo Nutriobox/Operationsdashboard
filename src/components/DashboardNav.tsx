@@ -65,8 +65,8 @@ export default function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex justify-center">
-      <div className="inline-flex flex-wrap gap-2 rounded-full bg-white border border-slate-200 p-1.5 shadow-sm">
+    <div className="flex justify-center px-4">
+      <div className="inline-flex flex-wrap gap-1.5 rounded-xl bg-white border border-slate-200/80 p-1.5 shadow-sm backdrop-blur-sm">
         {TABS.map((t) => {
           if ('internal' in t) {
             const isActive = pathname === t.href || pathname.startsWith(t.href + '/');
@@ -74,27 +74,28 @@ export default function DashboardNav() {
               <Link
                 key={t.label}
                 href={t.href}
-                className={`px-5 py-2 text-sm font-medium rounded-full transition ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-brand text-white shadow'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 {t.label}
               </Link>
             );
           }
-          // External: skip the intermediate /dashboard/daily and
-          // /dashboard/weekly pages entirely — go straight to Google Sheets.
           return (
             <a
               key={t.label}
               href={t.hrefFactory()}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-2 text-sm font-medium rounded-full transition text-slate-700 hover:bg-slate-100"
+              className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             >
               {t.label}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3 opacity-40">
+                <path fillRule="evenodd" d="M4.22 11.78a.75.75 0 010-1.06L8.44 6.5H5.75a.75.75 0 010-1.5h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V7.56l-4.22 4.22a.75.75 0 01-1.06 0z" clipRule="evenodd" />
+              </svg>
             </a>
           );
         })}

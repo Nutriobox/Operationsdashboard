@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import DashboardNav from '@/components/DashboardNav';
+import DashboardCards from '@/components/DashboardCards';
 
 export default function DashboardChrome({
   name,
@@ -13,46 +14,51 @@ export default function DashboardChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // /dashboard is the launcher screen — full-page background image, just the buttons.
-  // /dashboard/sales-item and /dashboard/discount-codes are full-bleed report
-  // viewers — no chrome at all. Other sub-routes show the welcome header.
   const isHome = pathname === '/dashboard';
   const isFullPageReport =
     pathname === '/dashboard/sales-item' ||
     pathname === '/dashboard/discount-codes' ||
     pathname === '/dashboard/delay';
 
-  // 3.5rem = h-14 navbar height.
-  // backgroundSize: 'contain' shows the entire image without cropping; the
-  // green fallback colour fills any letterboxed area on aspect-ratio mismatch.
-  const homeStyle: React.CSSProperties = {
-    minHeight: 'calc(100vh - 3.5rem)',
-    backgroundImage: "url('/nutriobox-bg.jpg')",
-    backgroundColor: '#7BAE3E',
-    backgroundSize: 'contain',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
-  };
-
+  /* ── Landing page: welcome header + dashboard cards ── */
   if (isHome) {
     return (
-      <div style={homeStyle} className="flex items-start justify-center pt-6">
-        <DashboardNav />
+      <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 to-white">
+        {/* Hero section */}
+        <div className="mx-auto max-w-7xl px-6 pt-12 pb-4">
+          <div className="animate-fade-in">
+            <p className="text-sm font-medium text-brand-600 tracking-wide uppercase">
+              Operations Hub
+            </p>
+            <h1 className="mt-2 text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+              Welcome back, {name}
+            </h1>
+            <p className="mt-2 text-slate-500 text-base max-w-xl">
+              Access your dashboards and reports from one place. Select a dashboard below to get started.
+            </p>
+          </div>
+        </div>
+
+        {/* Dashboard cards grid */}
+        <div className="mx-auto max-w-7xl px-6 pt-4 pb-16 animate-slide-up">
+          <DashboardCards />
+        </div>
       </div>
     );
   }
 
-  // Sales Item / Discount Codes: render the report alone, no chrome.
+  /* ── Full-page reports: no chrome ── */
   if (isFullPageReport) {
     return <>{children}</>;
   }
 
+  /* ── Other sub-routes: header + pill nav + children ── */
   return (
-    <div>
-      <header className="mx-auto max-w-6xl px-4 pt-12 pb-4 text-slate-900">
-        <h1 className="text-4xl md:text-5xl font-bold">Welcome back, {name}</h1>
-        <p className="mt-2 text-slate-600">
-          Your <span className="capitalize font-medium">{segment}</span> plan dashboard
+    <div className="min-h-[calc(100vh-4rem)]">
+      <header className="mx-auto max-w-7xl px-6 pt-10 pb-2 text-slate-900">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Welcome back, {name}</h1>
+        <p className="mt-1 text-slate-500 text-sm">
+          Your <span className="capitalize font-medium text-slate-700">{segment}</span> plan dashboard
         </p>
       </header>
 

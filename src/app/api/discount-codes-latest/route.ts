@@ -29,9 +29,12 @@ export async function GET() {
       apikey: secretKey,
       'Content-Type': 'application/json',
     },
+    // NB: Supabase's `prefix` is a folder path, not a substring filter.
+    // The reports bucket is flat, so we ask for all files at the root and
+    // filter to discount-codes-YYYY-MM-DD.html in code below.
     body: JSON.stringify({
-      prefix: 'discount-codes-',
-      limit: 200,
+      prefix: '',
+      limit: 1000,
       sortBy: { column: 'name', order: 'desc' },
     }),
     cache: 'no-store',

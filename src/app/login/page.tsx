@@ -28,61 +28,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-[calc(100vh-4rem)] overflow-hidden">
-      {/* ── Left panel: cream background with branding ── */}
-      <div className="relative hidden lg:flex lg:w-[55%] flex-col bg-[#f5f1eb] px-12 py-10 overflow-hidden">
-        {/* Nutriobox logo top-left */}
-        <div className="relative z-10">
+    <div className="relative min-h-screen bg-[#3d7c53] overflow-hidden flex">
+      {/* ── Left side: branding + text ── */}
+      <div className="relative z-10 hidden lg:flex lg:w-[50%] flex-col justify-center px-14 xl:px-20">
+        {/* Nutriobox logo */}
+        <div className="mb-10">
           <Image
             src="/nutriobox-brand-logo.jpg"
             alt="Nutriobox"
-            width={160}
-            height={46}
-            className="h-10 w-auto object-contain"
+            width={180}
+            height={52}
+            className="h-12 w-auto object-contain brightness-0 invert"
             priority
           />
         </div>
 
-        {/* Hero text */}
-        <div className="relative z-10 mt-auto mb-auto -translate-y-8">
-          {/* Floating labels */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className="inline-flex items-center rounded-full bg-white px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm">
-              Manage leaves
-            </span>
-          </div>
-
-          <h2 className="text-5xl xl:text-6xl font-extrabold text-[#2d5a3d] leading-[1.1] tracking-tight">
-            Your workplace,
-            <br />
-            simplified.
-          </h2>
-
-          <div className="flex items-center gap-3 mt-5">
-            <span className="inline-flex items-center rounded-full bg-white px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm">
-              payslips
-            </span>
-            <span className="inline-flex items-center rounded-full bg-[#d4f542] px-4 py-1.5 text-sm font-medium text-slate-800 shadow-sm">
-              more from a single dashboard
-            </span>
-          </div>
+        {/* Floating labels */}
+        <div className="flex items-center gap-3 mb-5">
+          <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm">
+            Sales analytics
+          </span>
         </div>
 
-        {/* Food image — bottom of the left panel */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[48%] pointer-events-none bg-cover bg-top"
-          style={{ backgroundImage: "url('/login-food.png')" }}
-        >
-          {/* Fade overlay so food blends into cream background at top */}
-          <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[#f5f1eb] to-transparent" />
+        {/* Main headline */}
+        <h1 className="text-5xl xl:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
+          Your operations,
+          <br />
+          simplified.
+        </h1>
+
+        <div className="flex flex-wrap items-center gap-3 mt-6">
+          <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm">
+            delivery insights
+          </span>
+          <span className="inline-flex items-center rounded-full bg-[#d4f542] px-4 py-1.5 text-sm font-medium text-slate-800 shadow-sm">
+            all reports in one dashboard
+          </span>
         </div>
+
+        <p className="mt-8 text-white/70 text-base max-w-md leading-relaxed">
+          Track sales performance, monitor delivery delays, and access discount analytics — all from a single hub.
+        </p>
       </div>
 
-      {/* ── Right panel: green background with login card ── */}
-      <div className="relative flex w-full lg:w-[45%] flex-col items-center justify-center bg-[#3d7c53] px-6 py-12">
-        {/* Decorative rounded white card — login form */}
-        <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-2xl">
-          {/* Mobile-only logo */}
+      {/* ── Right side: food images + login card ── */}
+      <div className="relative flex w-full lg:w-[50%] items-center justify-center px-6 py-12">
+        {/* Food image background on the right — behind the card */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{ backgroundImage: "url('/login-food.png')" }}
+        />
+        {/* Dark overlay to ensure card readability */}
+        <div className="absolute inset-0 bg-[#3d7c53]/60" />
+
+        {/* White rounded login card */}
+        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#f9f7f3] p-10 shadow-2xl">
+          {/* Mobile logo */}
           <div className="mb-6 lg:hidden flex justify-center">
             <Image
               src="/nutriobox-brand-logo.jpg"
@@ -94,7 +95,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900">Log in</h1>
+          <h2 className="text-2xl font-bold text-slate-900">Log in</h2>
           <p className="text-sm text-slate-500 mt-1">
             Welcome back. Sign in to access your dashboard.
           </p>
@@ -107,8 +108,8 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
-                placeholder="you@company.com"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+                placeholder="you@nutriobox.com"
               />
             </div>
             <div>
@@ -118,7 +119,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
                 placeholder="••••••••"
               />
             </div>
@@ -138,12 +139,14 @@ export default function LoginPage() {
             </button>
           </form>
         </div>
-
-        {/* Subtle branding at bottom */}
-        <p className="mt-8 text-sm text-white/60">
-          Powered by Nutriobox
-        </p>
       </div>
+
+      {/* ── Decorative food images — scattered around edges ── */}
+      {/* Bottom-left food cluster */}
+      <div
+        className="hidden lg:block absolute bottom-0 left-0 w-[55%] h-[45%] pointer-events-none bg-contain bg-bottom bg-no-repeat"
+        style={{ backgroundImage: "url('/login-food.png')" }}
+      />
     </div>
   );
 }

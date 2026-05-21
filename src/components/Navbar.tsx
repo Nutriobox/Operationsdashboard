@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase/server';
 import LogoutButton from './LogoutButton';
@@ -12,13 +13,15 @@ export default async function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand to-brand-700 flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">N</span>
-          </div>
-          <span className="font-semibold text-lg tracking-tight text-slate-900 group-hover:text-brand-700 transition-colors">
-            Nutriobox
-          </span>
+        <Link href="/" className="flex-shrink-0">
+          <Image
+            src="/nutriobox-brand-logo.jpg"
+            alt="Nutriobox"
+            width={140}
+            height={40}
+            className="h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Right side */}

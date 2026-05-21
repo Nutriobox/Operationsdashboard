@@ -74,13 +74,13 @@ export default function LoginPage() {
 
       {/* ── Right side: login card with food peeking around it ── */}
       <div className="relative flex w-full lg:w-[50%] items-center justify-center px-6 py-12">
-        {/* Food image background — subtle, behind the card */}
+        {/* Food image background — visible enough to see dishes peeking around the card */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-25"
+          className="absolute inset-0 bg-cover bg-center opacity-35"
           style={{ backgroundImage: "url('/login-food.png')" }}
         />
         {/* Green overlay so card stays readable */}
-        <div className="absolute inset-0 bg-[#3d7c53]/50" />
+        <div className="absolute inset-0 bg-[#3d7c53]/40" />
 
         {/* White/cream rounded login card */}
         <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#f9f7f3] p-10 shadow-2xl">
@@ -142,14 +142,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Decorative food image — bottom-left, below text ── */}
+      {/* ── Decorative food image — bottom-left, well below text ── */}
       <div
-        className="hidden lg:block absolute bottom-0 left-0 w-[50%] h-[35%] pointer-events-none z-10 bg-contain bg-left-bottom bg-no-repeat"
+        className="hidden lg:block absolute -bottom-4 left-0 w-[48%] h-[30%] pointer-events-none z-10 bg-cover bg-bottom bg-no-repeat"
         style={{ backgroundImage: "url('/login-food.png')" }}
       />
-      {/* Gradient to blend food into the green bg at top */}
-      <div className="hidden lg:block absolute bottom-0 left-0 w-[50%] h-[40%] pointer-events-none z-[11]">
-        <div className="h-16 bg-gradient-to-b from-[#3d7c53] to-transparent" />
+      {/* Gradient to blend food into the green bg at top edge */}
+      <div className="hidden lg:block absolute bottom-0 left-0 w-[48%] h-[34%] pointer-events-none z-[11]">
+        <div className="h-20 bg-gradient-to-b from-[#3d7c53] to-transparent" />
       </div>
     </div>
   );

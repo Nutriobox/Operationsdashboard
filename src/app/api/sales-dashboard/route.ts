@@ -30,7 +30,9 @@ export async function GET() {
   // Browsers will decompress transparently if we forward Content-Encoding.
   const headers = new Headers();
   headers.set('Content-Type', 'text/html; charset=utf-8');
-  headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+  // Report updates once daily at 5:30 AM IST. Cache aggressively:
+  // 4 hours fresh + serve stale for 12 hours while revalidating in background.
+  headers.set('Cache-Control', 'public, max-age=14400, stale-while-revalidate=43200');
   const enc = upstream.headers.get('content-encoding');
   if (enc) headers.set('Content-Encoding', enc);
 

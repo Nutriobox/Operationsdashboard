@@ -29,21 +29,22 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen bg-[#3d7c53] overflow-hidden flex">
+
       {/* ── Left side: branding + text ── */}
-      <div className="relative z-10 hidden lg:flex lg:w-[50%] flex-col justify-center px-14 xl:px-20">
-        {/* Nutriobox logo */}
+      <div className="relative z-20 hidden lg:flex lg:w-[50%] flex-col justify-center px-14 xl:px-20">
+        {/* Nutriobox logo — use the PNG which has transparency */}
         <div className="mb-10">
           <Image
-            src="/nutriobox-brand-logo.jpg"
+            src="/nutriobox-logo.png"
             alt="Nutriobox"
             width={180}
             height={52}
-            className="h-12 w-auto object-contain brightness-0 invert"
+            className="h-12 w-auto object-contain"
             priority
           />
         </div>
 
-        {/* Floating labels */}
+        {/* Floating label */}
         <div className="flex items-center gap-3 mb-5">
           <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-emerald-700 shadow-sm">
             Sales analytics
@@ -71,19 +72,19 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* ── Right side: food images + login card ── */}
+      {/* ── Right side: login card with food peeking around it ── */}
       <div className="relative flex w-full lg:w-[50%] items-center justify-center px-6 py-12">
-        {/* Food image background on the right — behind the card */}
+        {/* Food image background — subtle, behind the card */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40"
+          className="absolute inset-0 bg-cover bg-center opacity-25"
           style={{ backgroundImage: "url('/login-food.png')" }}
         />
-        {/* Dark overlay to ensure card readability */}
-        <div className="absolute inset-0 bg-[#3d7c53]/60" />
+        {/* Green overlay so card stays readable */}
+        <div className="absolute inset-0 bg-[#3d7c53]/50" />
 
-        {/* White rounded login card */}
+        {/* White/cream rounded login card */}
         <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#f9f7f3] p-10 shadow-2xl">
-          {/* Mobile logo */}
+          {/* Mobile logo — only visible on small screens */}
           <div className="mb-6 lg:hidden flex justify-center">
             <Image
               src="/nutriobox-brand-logo.jpg"
@@ -141,12 +142,15 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Decorative food images — scattered around edges ── */}
-      {/* Bottom-left food cluster */}
+      {/* ── Decorative food image — bottom-left, below text ── */}
       <div
-        className="hidden lg:block absolute bottom-0 left-0 w-[55%] h-[45%] pointer-events-none bg-contain bg-bottom bg-no-repeat"
+        className="hidden lg:block absolute bottom-0 left-0 w-[50%] h-[35%] pointer-events-none z-10 bg-contain bg-left-bottom bg-no-repeat"
         style={{ backgroundImage: "url('/login-food.png')" }}
       />
+      {/* Gradient to blend food into the green bg at top */}
+      <div className="hidden lg:block absolute bottom-0 left-0 w-[50%] h-[40%] pointer-events-none z-[11]">
+        <div className="h-16 bg-gradient-to-b from-[#3d7c53] to-transparent" />
+      </div>
     </div>
   );
 }

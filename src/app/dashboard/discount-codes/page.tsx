@@ -5,10 +5,13 @@
 // matching report from Supabase Storage. If no report exists for the chosen
 // date, the API serves a friendly "No report available" placeholder.
 //
-// Defaults to today's date in IST so the freshest report appears on load.
+// On mount, the page asks /api/discount-codes-latest for the most recent
+// date that has a report and defaults the picker to that. This way the user
+// sees the freshest available report even if today's email hasn't arrived
+// yet (in which case "latest" will be yesterday).
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 function todayInIst(): string {
   const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -26,7 +29,34 @@ function formatPretty(isoDate: string): string {
 
 export default function DiscountCodesPage() {
   const today = useMemo(todayInIst, []);
+  // Start at today; if /api/discount-codes-latest returns a different
+  // (typically older) most-recent date and the user hasn't manually picked,
+  // we jump to that. We also flip an init flag so the user's manual picks
+  // aren't overwritten on a slow API response.
   const [date, setDate] = useState<string>(today);
+  const [userPicked, setUserPicked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/discount-codes-latest', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j: { latestDate?: string | null }) => {
+        if (cancelled || userPicked) return;
+        if (j.latestDate && j.latestDate !== date) {
+          setDate(j.latestDate);
+        }
+      })
+      .catch(() => {/* fall back to today */});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onChangeDate = (newDate: string) => {
+    setUserPicked(true);
+    setDate(newDate || today);
+  };
 
   const iframeSrc = `/api/discount-codes-report?date=${date}`;
   // Header strip is 3rem (h-12). Top navbar is 3.5rem (h-14).
@@ -46,7 +76,7 @@ export default function DiscountCodesPage() {
             type="date"
             value={date}
             max={today}
-            onChange={(e) => setDate(e.target.value || today)}
+            onChange={(e) => onChangeDate(e.target.value)}
             className="px-2 py-1 rounded border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </label>

@@ -57,10 +57,10 @@ export default function LoginPage() {
       <div
         className="absolute z-10"
         style={{
-          top: '58%',
-          left: '8%',
-          width: '36%',
-          height: '16%',
+          top: '50%',
+          left: '0%',
+          width: '44%',
+          height: '25%',
           backgroundColor: '#f6f5f0',
         }}
       />
@@ -68,10 +68,10 @@ export default function LoginPage() {
       <div
         className="absolute z-10"
         style={{
-          top: '58%',
+          top: '50%',
           left: '44%',
-          width: '16%',
-          height: '16%',
+          width: '22%',
+          height: '25%',
           backgroundColor: '#357953',
         }}
       />

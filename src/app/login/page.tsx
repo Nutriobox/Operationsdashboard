@@ -41,6 +41,66 @@ export default function LoginPage() {
         style={{ width: '39%', height: '15.5%', backgroundColor: '#f6f5f0' }}
       />
 
+      {/* ── Patch: cover HR headline text area (cream side) ── */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: '15%',
+          left: '0%',
+          width: '46%',
+          height: '42%',
+          backgroundColor: '#f6f5f0',
+        }}
+      />
+      {/* ── Patch: cover HR headline text area (green side) ── */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: '15%',
+          left: '46%',
+          width: '17%',
+          height: '42%',
+          backgroundColor: '#357953',
+        }}
+      />
+
+      {/* ── Replacement text overlay ── */}
+      <div
+        className="absolute z-20 flex flex-col justify-center px-[5%]"
+        style={{
+          top: '16%',
+          left: '0%',
+          width: '60%',
+          height: '40%',
+        }}
+      >
+        <div className="flex gap-3 mb-4">
+          <span className="inline-block rounded-full bg-white/90 border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-700">
+            Sales analytics
+          </span>
+          <span className="inline-block rounded-full bg-[#c8f169] px-4 py-1.5 text-sm font-medium text-slate-800">
+            Delivery insights
+          </span>
+        </div>
+        <h1
+          className="font-bold text-slate-900 leading-[1.05] tracking-tight"
+          style={{ fontSize: 'clamp(2rem, 4.5vw, 4.2rem)' }}
+        >
+          Your operations,<br />simplified.
+        </h1>
+        <div className="flex gap-3 mt-4">
+          <span className="inline-block rounded-full bg-white/90 border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-700">
+            Menu planning
+          </span>
+          <span className="text-sm font-medium text-slate-600 flex items-center">
+            more from a
+          </span>
+          <span className="inline-block rounded-full bg-[#c8f169] px-4 py-1.5 text-sm font-medium text-slate-800">
+            single dashboard
+          </span>
+        </div>
+      </div>
+
       {/* ── Patch: cover "Sukhna Foods + Nutriobox" logos in center ── */}
       <div
         className="absolute z-10"

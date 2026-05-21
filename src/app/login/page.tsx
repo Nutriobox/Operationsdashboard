@@ -89,11 +89,11 @@ export default function LoginPage() {
 
       {/* ── New food image (Photo 3) at bottom ── */}
       <div
-        className="absolute bottom-0 left-0 right-0 z-20 h-[42%] bg-cover bg-bottom bg-no-repeat"
+        className="absolute bottom-0 left-0 right-0 z-20 h-[36%] bg-cover bg-bottom bg-no-repeat"
         style={{ backgroundImage: "url('/login-food.png')" }}
       />
       {/* Gradient blend at top of food image */}
-      <div className="absolute bottom-[30%] left-0 right-0 z-[21] h-[14%]">
+      <div className="absolute bottom-[25%] left-0 right-0 z-[21] h-[12%]">
         <div
           className="h-full w-[44%] float-left"
           style={{
@@ -110,12 +110,12 @@ export default function LoginPage() {
 
       {/* ── Login form — positioned over the white card in the image ── */}
       <div
-        className="absolute z-30 flex items-center justify-center"
+        className="absolute z-30 flex items-start justify-center pt-8"
         style={{
-          top: '14%',
+          top: '12%',
           right: '3%',
           width: '35%',
-          height: '60%',
+          height: '55%',
         }}
       >
         <div className="w-full max-w-sm px-6">

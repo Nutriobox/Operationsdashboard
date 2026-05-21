@@ -6,9 +6,12 @@
 // When a new week's tab gets added to the sheet, append it to WEEKLY_GIDS
 // with the Monday of that week as the "start" key. The script picks the
 // most recent start date that is <= "last week's Monday".
-'use client';
+//
+// Server-side redirect so the browser jumps to Google Sheets instantly with
+// no visible intermediate page.
+import { redirect } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
+export const dynamic = 'force-dynamic';
 
 const SHEET_ID = '1oNCCGX5ntgPW_OYwjWB5LMFhLfPitxzVAMWj95G0qpc';
 
@@ -20,7 +23,7 @@ const WEEKLY_GIDS: Array<{ startMonday: string; gid: string; label: string }> = 
 ];
 
 function buildLastWeekUrl(): string {
-  // Compute the Monday of "last week" in IST.
+  // Compute the Monday of "last week" in IST regardless of where the server is.
   const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
   const nowIst = new Date(Date.now() + IST_OFFSET_MS);
   const dayOfWeek = nowIst.getUTCDay(); // 0=Sun ... 6=Sat
@@ -43,22 +46,5 @@ function buildLastWeekUrl(): string {
 }
 
 export default function WeeklyDashboardPage() {
-  const [url] = useState(buildLastWeekUrl);
-
-  useEffect(() => {
-    window.location.replace(url);
-  }, [url]);
-
-  return (
-    <div className="mx-auto max-w-md text-center py-16 text-slate-600">
-      <p>Opening last week&apos;s sales report in Google Sheets…</p>
-      <p className="mt-3 text-sm">
-        If it doesn&apos;t open in a moment,&nbsp;
-        <a className="text-brand underline" href={url}>
-          click here
-        </a>
-        .
-      </p>
-    </div>
-  );
+  redirect(buildLastWeekUrl());
 }

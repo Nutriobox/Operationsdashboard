@@ -19,7 +19,8 @@ export default function DashboardChrome({
   const isHome = pathname === '/dashboard';
   const isFullPageReport =
     pathname === '/dashboard/sales-item' ||
-    pathname === '/dashboard/discount-codes';
+    pathname === '/dashboard/discount-codes' ||
+    pathname === '/dashboard/delay';
 
   // 3.5rem = h-14 navbar height.
   // backgroundSize: 'contain' shows the entire image without cropping; the

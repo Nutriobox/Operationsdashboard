@@ -1,11 +1,10 @@
 // Daily Dashboard - redirects to the appropriate weekday tab in the Sales Data
 // Google Sheet. "Daily" means yesterday's data (today's numbers aren't
-// finalized yet). Done client-side so the browser actually leaves the site
-// even when Next.js has cached the dashboard chrome, and so day-of-week is
-// computed in the user's local IST clock.
-'use client';
+// finalized yet). Server-side redirect so the browser jumps to Google Sheets
+// instantly with no visible intermediate page.
+import { redirect } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
+export const dynamic = 'force-dynamic';
 
 const SHEET_ID = '1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs';
 
@@ -21,7 +20,7 @@ const DAY_GIDS: Record<number, string> = {
 };
 
 function buildYesterdayUrl(): string {
-  // Compute "yesterday" in IST regardless of the user's locale.
+  // Compute "yesterday" in IST regardless of where the server is.
   const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
   const yesterdayIst = new Date(Date.now() + IST_OFFSET_MS - 24 * 60 * 60 * 1000);
   const dayIndex = yesterdayIst.getUTCDay();
@@ -30,22 +29,5 @@ function buildYesterdayUrl(): string {
 }
 
 export default function DailyDashboardPage() {
-  const [url] = useState(buildYesterdayUrl);
-
-  useEffect(() => {
-    window.location.replace(url);
-  }, [url]);
-
-  return (
-    <div className="mx-auto max-w-md text-center py-16 text-slate-600">
-      <p>Opening yesterday&apos;s sales dashboard in Google Sheets…</p>
-      <p className="mt-3 text-sm">
-        If it doesn&apos;t open in a moment,&nbsp;
-        <a className="text-brand underline" href={url}>
-          click here
-        </a>
-        .
-      </p>
-    </div>
-  );
+  redirect(buildYesterdayUrl());
 }

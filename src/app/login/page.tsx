@@ -29,17 +29,17 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* ── Background: meal photo on green ── */}
+      {/* ── Background: meal photo on green (brightened) ── */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/login-food.png')" }}
+        style={{
+          backgroundImage: "url('/login-food.png')",
+          filter: 'brightness(1.18) saturate(1.05)',
+        }}
       />
 
-      {/* Subtle dark overlay for card contrast */}
-      <div className="absolute inset-0 bg-black/20" />
-
-      {/* ── Centered login card ── */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+      {/* ── Login card — top-aligned so the lower meal bowl stays visible ── */}
+      <div className="relative z-10 flex min-h-screen items-start justify-center px-4 pt-10 md:pt-14 pb-10">
         <div className="w-full max-w-md rounded-2xl bg-white/95 backdrop-blur-sm shadow-2xl ring-1 ring-black/5 px-8 py-10">
           {/* Logo */}
           <div className="flex justify-center mb-6">

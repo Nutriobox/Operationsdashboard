@@ -30,11 +30,17 @@ export async function GET() {
   // Browsers will decompress transparently if we forward Content-Encoding.
   const headers = new Headers();
   headers.set('Content-Type', 'text/html; charset=utf-8');
-  // Report updates once daily at 5:30 AM IST. Cache aggressively:
-  // 4 hours fresh + serve stale for 12 hours while revalidating in background.
-  headers.set('Cache-Control', 'public, max-age=14400, stale-while-revalidate=43200');
+  // Dashboard refreshes twice a day (9:30 AM + 4:40 PM IST). Keep cache short
+  // so new uploads are visible within a minute. Allow stale-while-revalidate
+  // for 1 hour to absorb traffic between refreshes.
+  headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=3600');
   const enc = upstream.headers.get('content-encoding');
   if (enc) headers.set('Content-Encoding', enc);
+  // Forward Last-Modified / ETag so browsers + CDNs can revalidate cheaply.
+  const lm = upstream.headers.get('last-modified');
+  if (lm) headers.set('Last-Modified', lm);
+  const et = upstream.headers.get('etag');
+  if (et) headers.set('ETag', et);
 
   return new NextResponse(upstream.body, { status: 200, headers });
 }

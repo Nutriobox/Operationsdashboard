@@ -85,8 +85,12 @@ export function SalesPreloadProvider({ children }: { children: React.ReactNode }
             </div>
           )}
 
+          {/* ?v=… is a cache-buster: each calendar hour gets a new URL, so the
+              browser refetches at most once per hour even if it has a stale
+              entry from an older deploy. The route now sends max-age=60 anyway,
+              so within-the-hour edits still propagate within ~1 min. */}
           <iframe
-            src="/api/sales-dashboard"
+            src={`/api/sales-dashboard?v=${Math.floor(Date.now() / 3_600_000)}`}
             title="Sales Item Dashboard"
             className="block w-full h-full border-0 bg-white"
             onLoad={handleLoad}

@@ -29,66 +29,32 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* ── Background: the exact original design image ── */}
+      {/* ── Background: meal photo on green ── */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/Web-Banner-02.png')" }}
+        style={{ backgroundImage: "url('/login-food.png')" }}
       />
 
-      {/* ── Cover "Allsure Services Pvt. Ltd." with cream patch ── */}
-      <div
-        className="absolute top-0 left-0 z-10"
-        style={{ width: '39%', height: '15%', backgroundColor: '#f6f5f0' }}
-      />
+      {/* Subtle dark overlay for card contrast */}
+      <div className="absolute inset-0 bg-black/20" />
 
-      {/* ── Nutriobox logo in place of Allsure text ── */}
-      <div className="absolute top-[3%] left-[2.5%] z-20">
-        <Image
-          src="/nutriobox-logo.png"
-          alt="Nutriobox"
-          width={220}
-          height={80}
-          className="h-16 w-auto object-contain"
-          priority
-        />
-      </div>
+      {/* ── Centered login card ── */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md rounded-2xl bg-white/95 backdrop-blur-sm shadow-2xl ring-1 ring-black/5 px-8 py-10">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/nutriobox-logo.png"
+              alt="Nutriobox"
+              width={220}
+              height={80}
+              className="h-14 w-auto object-contain"
+              priority
+            />
+          </div>
 
-      {/* ── Cover "Sukhna Foods + Nutriobox" logos (cream portion) ── */}
-      <div
-        className="absolute z-10"
-        style={{
-          top: '48%',
-          left: '0%',
-          width: '44%',
-          height: '30%',
-          backgroundColor: '#f6f5f0',
-        }}
-      />
-      {/* ── Cover "Sukhna Foods + Nutriobox" logos (green portion) ── */}
-      <div
-        className="absolute z-10"
-        style={{
-          top: '48%',
-          left: '44%',
-          width: '22%',
-          height: '30%',
-          backgroundColor: '#357953',
-        }}
-      />
-
-      {/* ── Login form inside the white card area ── */}
-      <div
-        className="absolute z-30 flex items-start justify-center pt-10"
-        style={{
-          top: '10%',
-          right: '3%',
-          width: '35%',
-          height: '58%',
-        }}
-      >
-        <div className="w-full max-w-sm px-6">
-          <h2 className="text-2xl font-bold text-slate-900">Log in</h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <h2 className="text-2xl font-bold text-slate-900 text-center">Log in</h2>
+          <p className="text-sm text-slate-500 mt-1 text-center">
             Welcome back. Sign in to access your dashboard.
           </p>
 

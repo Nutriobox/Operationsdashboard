@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import NavbarWrapper from '@/components/NavbarWrapper';
 
 export const metadata: Metadata = {
-  title: 'Nutriobox',
+  title: 'NutrioBox : Healthy, Tasty & Organic Food Cafes in Delhi NCR',
   description: 'Personalized dashboards and category insights for your business.'
 };
 

@@ -52,6 +52,14 @@ function WeeklyIcon() {
   );
 }
 
+function RatingsIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
 function ExternalArrow() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -131,6 +139,14 @@ const CARDS: CardDef[] = [
     desc: 'Monitor delivery delays, identify bottlenecks, and track on-time performance across outlets.',
     icon: <DelayIcon />,
     accent: 'from-amber-500 to-orange-600',
+    internal: true,
+  },
+  {
+    href: '/dashboard/ratings',
+    label: 'Ratings',
+    desc: 'Zomato, Swiggy & Google ratings for every outlet — compare platforms and spot which locations need attention.',
+    icon: <RatingsIcon />,
+    accent: 'from-teal-500 to-cyan-600',
     internal: true,
   },
   {

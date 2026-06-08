@@ -1,0 +1,26 @@
+{
+  "_comment": "One entry per outlet. Fill in the URLs/IDs for each platform. Leave a field as empty string to skip that platform (it will show as '—'). googlePlaceId comes from Google Places; zomatoUrl/swiggyUrl are the public listing pages for that outlet.",
+  "outlets": [
+    {
+      "name": "Koramangala",
+      "city": "Bengaluru",
+      "googlePlaceId": "",
+      "zomatoUrl": "",
+      "swiggyUrl": ""
+    },
+    {
+      "name": "Indiranagar",
+      "city": "Bengaluru",
+      "googlePlaceId": "",
+      "zomatoUrl": "",
+      "swiggyUrl": ""
+    },
+    {
+      "name": "HSR Layout",
+      "city": "Bengaluru",
+      "googlePlaceId": "",
+      "zomatoUrl": "",
+      "swiggyUrl": ""
+    }
+  ]
+}

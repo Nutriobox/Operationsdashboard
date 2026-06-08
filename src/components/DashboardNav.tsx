@@ -57,6 +57,7 @@ const TABS: Tab[] = [
   { href: '/dashboard/sales-item',    label: 'Sales Item Dashboard', internal: true },
   { href: '/dashboard/discount-codes',label: 'Discount Codes',       internal: true },
   { href: '/dashboard/delay',         label: 'Delay Dashboard',      internal: true },
+  { href: '/dashboard/ratings',       label: 'Ratings',              internal: true },
   { hrefFactory: buildDailyUrl,       label: 'Daily Dashboard',      external: true },
   { hrefFactory: buildWeeklyUrl,      label: 'Weekly Dashboard',     external: true },
 ];

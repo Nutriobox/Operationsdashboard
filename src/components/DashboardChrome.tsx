@@ -19,7 +19,8 @@ export default function DashboardChrome({
   const isSalesItem = pathname === '/dashboard/sales-item';
   const isFullPageReport =
     pathname === '/dashboard/discount-codes' ||
-    pathname === '/dashboard/delay';
+    pathname === '/dashboard/delay' ||
+    pathname === '/dashboard/ratings';
 
   /* ── Landing page OR Sales Item: wrapped in SalesPreloadProvider ──
      The provider keeps a single iframe alive across both routes.

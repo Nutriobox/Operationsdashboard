@@ -23,7 +23,7 @@ import { PLATFORMS, type PlatformKey, type RatingsData, type OutletRating } from
 // Weekly history powers the trend line chart. Shape matches
 // reports/ratings-history.json, surfaced same-origin via /api/ratings-history.
 type WeeklyAggregate = { zomato: number | null; swiggy: number | null; google: number | null };
-type WeekEntry = { week: string; weekStart: string; weekEnd: string; capturedAt?: string; aggregate: WeeklyAggregate };
+type WeekEntry = { week: string; weekStart: string; weekEnd: string; capturedAt?: string; aggregate: WeeklyAggregate; outlets: OutletRating[] };
 type RatingsHistory = { weeks: WeekEntry[] };
 
 const HISTORY_URLS = [
@@ -141,15 +141,16 @@ export default function RatingsPage() {
   const curWeek = weeks.length ? (weekIdx < 0 ? weeks.length - 1 : Math.min(weekIdx, weeks.length - 1)) : -1;
   const selWeek = curWeek >= 0 ? weeks[curWeek] : null;
 
-  const trendData = useMemo(
+  // Per-outlet ratings for the calendar-selected week (x-axis = outlets).
+  const outletSeries = useMemo(
     () =>
-      weeks.map((w) => ({
-        week: w.week,
-        Zomato: w.aggregate?.zomato ?? null,
-        Swiggy: w.aggregate?.swiggy ?? null,
-        Google: w.aggregate?.google ?? null,
+      (selWeek?.outlets ?? []).map((o) => ({
+        name: o.name,
+        Zomato: o.zomato?.rating ?? null,
+        Swiggy: o.swiggy?.rating ?? null,
+        Google: o.google?.rating ?? null,
       })),
-    [history] // eslint-disable-line react-hooks/exhaustive-deps
+    [selWeek]
   );
 
   const pickWeekByDate = (value: string) => {
@@ -323,9 +324,9 @@ export default function RatingsPage() {
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-800">Ratings trend &mdash; all outlets</h2>
+            <h2 className="text-base font-semibold text-slate-800">Ratings by outlet</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              Average across all {data.outlets.length} outlets, week over week
+              Zomato, Swiggy &amp; Google for each outlet &middot; pick a date with the calendar
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -349,7 +350,7 @@ export default function RatingsPage() {
               </div>
               {selWeek && (
                 <div className="mt-0.5 text-xs text-slate-400">
-                  <span className="font-semibold text-slate-700">{selWeek.week}</span> &middot; {selWeek.weekStart} to {selWeek.weekEnd}
+                  <span className="font-semibold text-slate-700">{selWeek.weekStart}</span> to {selWeek.weekEnd}
                 </div>
               )}
             </div>
@@ -381,12 +382,12 @@ export default function RatingsPage() {
           </div>
         )}
 
-        <div className="h-80 w-full">
-          {weeks.length ? (
+        <div className="h-96 w-full">
+          {outletSeries.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+              <LineChart data={outletSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
                 <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
                 <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
@@ -397,7 +398,7 @@ export default function RatingsPage() {
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
-              The weekly trend builds up as the rating refresh runs each week.
+              No ratings recorded for the selected week.
             </div>
           )}
         </div>

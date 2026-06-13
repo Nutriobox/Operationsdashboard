@@ -141,8 +141,23 @@ export default function RatingsPage() {
   const curWeek = weeks.length ? (weekIdx < 0 ? weeks.length - 1 : Math.min(weekIdx, weeks.length - 1)) : -1;
   const selWeek = curWeek >= 0 ? weeks[curWeek] : null;
 
-  // Outlet filter: 'all' = network average, otherwise a single outlet.
-  const [selOutlet, setSelOutlet] = useState<string>('all');
+  // Constant "Ratings by outlet" chart — current snapshot, always shown.
+  const byOutletData = useMemo(
+    () =>
+      (data?.outlets ?? []).map((o) => ({
+        name: o.name,
+        Zomato: o.zomato?.rating ?? null,
+        Swiggy: o.swiggy?.rating ?? null,
+        Google: o.google?.rating ?? null,
+      })),
+    [data]
+  );
+
+  // Weekly-trend controls. selOutlet '' = nothing chosen (trend hidden),
+  // 'all' = network average, otherwise a single outlet.
+  const [selOutlet, setSelOutlet] = useState<string>('');
+  const [rangeFrom, setRangeFrom] = useState<string>('');
+  const [rangeTo, setRangeTo] = useState<string>('');
 
   const outletNames = useMemo(() => {
     const set = new Set<string>();
@@ -151,47 +166,49 @@ export default function RatingsPage() {
     return Array.from(set);
   }, [history, data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Weekly trend (x-axis = weeks) for the selected outlet, or the network
-  // average across all outlets when 'all' is selected.
+  // Weeks filtered to the chosen From/To date range (inclusive). Empty = all.
+  const rangedWeeks = useMemo(() => {
+    const from = rangeFrom ? isoMondayOf(rangeFrom) : null;
+    const to = rangeTo ? isoMondayOf(rangeTo) : null;
+    return weeks.filter((w) => (!from || w.weekStart >= from) && (!to || w.weekStart <= to));
+  }, [history, rangeFrom, rangeTo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Weekly trend (x-axis = weeks) for the selection. Empty until an outlet
+  // (or "All outlets") is chosen.
   const weekSeries = useMemo(
     () =>
-      weeks.map((w) => {
-        if (selOutlet === 'all') {
-          return {
-            week: w.week,
-            Zomato: w.aggregate?.zomato ?? null,
-            Swiggy: w.aggregate?.swiggy ?? null,
-            Google: w.aggregate?.google ?? null,
-          };
-        }
-        const o = (w.outlets ?? []).find((x) => x.name === selOutlet);
-        return {
-          week: w.week,
-          Zomato: o?.zomato?.rating ?? null,
-          Swiggy: o?.swiggy?.rating ?? null,
-          Google: o?.google?.rating ?? null,
-        };
-      }),
-    [history, selOutlet] // eslint-disable-line react-hooks/exhaustive-deps
+      selOutlet === ''
+        ? []
+        : rangedWeeks.map((w) => {
+            if (selOutlet === 'all') {
+              return {
+                week: w.week,
+                Zomato: w.aggregate?.zomato ?? null,
+                Swiggy: w.aggregate?.swiggy ?? null,
+                Google: w.aggregate?.google ?? null,
+              };
+            }
+            const o = (w.outlets ?? []).find((x) => x.name === selOutlet);
+            return {
+              week: w.week,
+              Zomato: o?.zomato?.rating ?? null,
+              Swiggy: o?.swiggy?.rating ?? null,
+              Google: o?.google?.rating ?? null,
+            };
+          }),
+    [rangedWeeks, selOutlet] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Summary pills = the calendar-selected week, for the selected outlet
-  // (or the network average when 'all').
+  // Quick-number pills = latest week in the filtered range, for the selection.
+  const lastRangedWeek = rangedWeeks.length ? rangedWeeks[rangedWeeks.length - 1] : null;
   const pillVals: WeeklyAggregate | null = (() => {
-    if (!selWeek) return null;
-    if (selOutlet === 'all') return selWeek.aggregate ?? null;
-    const o = (selWeek.outlets ?? []).find((x) => x.name === selOutlet);
+    if (selOutlet === '' || !lastRangedWeek) return null;
+    if (selOutlet === 'all') return lastRangedWeek.aggregate ?? null;
+    const o = (lastRangedWeek.outlets ?? []).find((x) => x.name === selOutlet);
     return o
       ? { zomato: o.zomato?.rating ?? null, swiggy: o.swiggy?.rating ?? null, google: o.google?.rating ?? null }
       : null;
   })();
-
-  const pickWeekByDate = (value: string) => {
-    if (!value) return;
-    const mon = isoMondayOf(value);
-    const i = weeks.findIndex((w) => w.weekStart === mon);
-    if (i >= 0) setWeekIdx(i);
-  };
 
   // Per-platform network averages + totals.
   const platformStats = useMemo(() => {
@@ -353,13 +370,43 @@ export default function RatingsPage() {
         </div>
       </div>
 
-      {/* Weekly ratings trend (all outlets) */}
+      {/* Ratings by outlet — current snapshot, always shown */}
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-slate-800">Ratings by outlet</h2>
+          <p className="mt-0.5 text-xs text-slate-400">Zomato, Swiggy &amp; Google for each outlet (latest)</p>
+        </div>
+        <div className="h-96 w-full">
+          {byOutletData.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={byOutletData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
+                <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
+                <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                <Line type="monotone" dataKey="Google" stroke={platformMeta('google').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">No outlet data.</div>
+          )}
+        </div>
+      </div>
+
+      {/* Weekly ratings trend — appears after choosing an outlet */}
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-800">Ratings trend</h2>
+            <h2 className="text-base font-semibold text-slate-800">Ratings trend (weekly)</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              {selOutlet === 'all' ? 'All outlets (network average)' : selOutlet} &middot; week over week
+              {selOutlet === ''
+                ? 'Choose an outlet to see its week-over-week trend'
+                : selOutlet === 'all'
+                ? 'All outlets (network average)'
+                : selOutlet}
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -370,6 +417,7 @@ export default function RatingsPage() {
                 onChange={(e) => setSelOutlet(e.target.value)}
                 className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
               >
+                <option value="">Select&hellip;</option>
                 <option value="all">All outlets</option>
                 {outletNames.map((n) => (
                   <option key={n} value={n}>
@@ -378,73 +426,71 @@ export default function RatingsPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-end gap-2">
-              <button
-                onClick={() => setWeekIdx(Math.max(0, (curWeek < 0 ? 0 : curWeek) - 1))}
-                disabled={curWeek <= 0}
-                className="flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
-                aria-label="Previous week"
-              >
-                &lsaquo;
-              </button>
-              <div>
-                <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Week</div>
-                <input
-                  type="date"
-                  value={selWeek?.weekStart ?? ''}
-                  onChange={(e) => pickWeekByDate(e.target.value)}
-                  className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
-                />
-              </div>
-              <button
-                onClick={() => setWeekIdx(Math.min(weeks.length - 1, (curWeek < 0 ? weeks.length - 1 : curWeek) + 1))}
-                disabled={curWeek < 0 || curWeek === weeks.length - 1}
-                className="flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
-                aria-label="Next week"
-              >
-                &rsaquo;
-              </button>
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">From</div>
+              <input
+                type="date"
+                value={rangeFrom}
+                onChange={(e) => setRangeFrom(e.target.value)}
+                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+              />
+            </div>
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">To</div>
+              <input
+                type="date"
+                value={rangeTo}
+                onChange={(e) => setRangeTo(e.target.value)}
+                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+              />
             </div>
           </div>
         </div>
 
-        {pillVals && (
-          <div className="mb-4 grid grid-cols-3 gap-3">
-            {PLATFORMS.map((p) => (
-              <div key={p.key} className="rounded-xl border border-slate-200 p-3">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                  {p.label}
-                </div>
-                <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
-                  {fmt(pillVals[p.key] ?? null, 2)}{' '}
-                  <span className="text-xs font-medium text-slate-400">/ 5</span>
-                </div>
-              </div>
-            ))}
+        {selOutlet === '' ? (
+          <div className="flex h-72 w-full items-center justify-center text-center text-sm text-slate-400">
+            Pick an outlet (or &ldquo;All outlets&rdquo;) above to see the weekly trend.
           </div>
+        ) : (
+          <>
+            {pillVals && (
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                {PLATFORMS.map((p) => (
+                  <div key={p.key} className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                      {p.label}
+                    </div>
+                    <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {fmt(pillVals[p.key] ?? null, 2)}{' '}
+                      <span className="text-xs font-medium text-slate-400">/ 5</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="h-80 w-full">
+              {weekSeries.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                    <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                    <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
+                    <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
+                    <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                    <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                    <Line type="monotone" dataKey="Google" stroke={platformMeta('google').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
+                  No weeks in the selected range yet.
+                </div>
+              )}
+            </div>
+          </>
         )}
-
-        <div className="h-80 w-full">
-          {weeks.length ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
-                <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
-                <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-                <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-                <Line type="monotone" dataKey="Google" stroke={platformMeta('google').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
-              The weekly trend builds up as the rating refresh runs each week.
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Per-outlet detail cards */}

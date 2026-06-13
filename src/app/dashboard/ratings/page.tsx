@@ -141,17 +141,50 @@ export default function RatingsPage() {
   const curWeek = weeks.length ? (weekIdx < 0 ? weeks.length - 1 : Math.min(weekIdx, weeks.length - 1)) : -1;
   const selWeek = curWeek >= 0 ? weeks[curWeek] : null;
 
-  // Per-outlet ratings for the calendar-selected week (x-axis = outlets).
-  const outletSeries = useMemo(
+  // Outlet filter: 'all' = network average, otherwise a single outlet.
+  const [selOutlet, setSelOutlet] = useState<string>('all');
+
+  const outletNames = useMemo(() => {
+    const set = new Set<string>();
+    weeks.forEach((w) => (w.outlets ?? []).forEach((o) => set.add(o.name)));
+    if (set.size === 0) (data?.outlets ?? []).forEach((o) => set.add(o.name));
+    return Array.from(set);
+  }, [history, data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Weekly trend (x-axis = weeks) for the selected outlet, or the network
+  // average across all outlets when 'all' is selected.
+  const weekSeries = useMemo(
     () =>
-      (selWeek?.outlets ?? []).map((o) => ({
-        name: o.name,
-        Zomato: o.zomato?.rating ?? null,
-        Swiggy: o.swiggy?.rating ?? null,
-        Google: o.google?.rating ?? null,
-      })),
-    [selWeek]
+      weeks.map((w) => {
+        if (selOutlet === 'all') {
+          return {
+            week: w.week,
+            Zomato: w.aggregate?.zomato ?? null,
+            Swiggy: w.aggregate?.swiggy ?? null,
+            Google: w.aggregate?.google ?? null,
+          };
+        }
+        const o = (w.outlets ?? []).find((x) => x.name === selOutlet);
+        return {
+          week: w.week,
+          Zomato: o?.zomato?.rating ?? null,
+          Swiggy: o?.swiggy?.rating ?? null,
+          Google: o?.google?.rating ?? null,
+        };
+      }),
+    [history, selOutlet] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  // Summary pills = the calendar-selected week, for the selected outlet
+  // (or the network average when 'all').
+  const pillVals: WeeklyAggregate | null = (() => {
+    if (!selWeek) return null;
+    if (selOutlet === 'all') return selWeek.aggregate ?? null;
+    const o = (selWeek.outlets ?? []).find((x) => x.name === selOutlet);
+    return o
+      ? { zomato: o.zomato?.rating ?? null, swiggy: o.swiggy?.rating ?? null, google: o.google?.rating ?? null }
+      : null;
+  })();
 
   const pickWeekByDate = (value: string) => {
     if (!value) return;
@@ -324,48 +357,58 @@ export default function RatingsPage() {
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-800">Ratings by outlet</h2>
+            <h2 className="text-base font-semibold text-slate-800">Ratings trend</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              Zomato, Swiggy &amp; Google for each outlet &middot; pick a date with the calendar
+              {selOutlet === 'all' ? 'All outlets (network average)' : selOutlet} &middot; week over week
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setWeekIdx(Math.max(0, (curWeek < 0 ? 0 : curWeek) - 1))}
-              disabled={curWeek <= 0}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
-              aria-label="Previous week"
-            >
-              &lsaquo;
-            </button>
-            <div className="text-right">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Week</span>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Outlet</div>
+              <select
+                value={selOutlet}
+                onChange={(e) => setSelOutlet(e.target.value)}
+                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+              >
+                <option value="all">All outlets</option>
+                {outletNames.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                onClick={() => setWeekIdx(Math.max(0, (curWeek < 0 ? 0 : curWeek) - 1))}
+                disabled={curWeek <= 0}
+                className="flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
+                aria-label="Previous week"
+              >
+                &lsaquo;
+              </button>
+              <div>
+                <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Week</div>
                 <input
                   type="date"
                   value={selWeek?.weekStart ?? ''}
                   onChange={(e) => pickWeekByDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-700"
+                  className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
                 />
               </div>
-              {selWeek && (
-                <div className="mt-0.5 text-xs text-slate-400">
-                  <span className="font-semibold text-slate-700">{selWeek.weekStart}</span> to {selWeek.weekEnd}
-                </div>
-              )}
+              <button
+                onClick={() => setWeekIdx(Math.min(weeks.length - 1, (curWeek < 0 ? weeks.length - 1 : curWeek) + 1))}
+                disabled={curWeek < 0 || curWeek === weeks.length - 1}
+                className="flex h-9 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
+                aria-label="Next week"
+              >
+                &rsaquo;
+              </button>
             </div>
-            <button
-              onClick={() => setWeekIdx(Math.min(weeks.length - 1, (curWeek < 0 ? weeks.length - 1 : curWeek) + 1))}
-              disabled={curWeek < 0 || curWeek === weeks.length - 1}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
-              aria-label="Next week"
-            >
-              &rsaquo;
-            </button>
           </div>
         </div>
 
-        {selWeek && (
+        {pillVals && (
           <div className="mb-4 grid grid-cols-3 gap-3">
             {PLATFORMS.map((p) => (
               <div key={p.key} className="rounded-xl border border-slate-200 p-3">
@@ -374,7 +417,7 @@ export default function RatingsPage() {
                   {p.label}
                 </div>
                 <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
-                  {fmt(selWeek.aggregate?.[p.key] ?? null, 2)}{' '}
+                  {fmt(pillVals[p.key] ?? null, 2)}{' '}
                   <span className="text-xs font-medium text-slate-400">/ 5</span>
                 </div>
               </div>
@@ -382,12 +425,12 @@ export default function RatingsPage() {
           </div>
         )}
 
-        <div className="h-96 w-full">
-          {outletSeries.length ? (
+        <div className="h-80 w-full">
+          {weeks.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={outletSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+              <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
                 <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
                 <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
@@ -398,7 +441,7 @@ export default function RatingsPage() {
             </ResponsiveContainer>
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
-              No ratings recorded for the selected week.
+              The weekly trend builds up as the rating refresh runs each week.
             </div>
           )}
         </div>

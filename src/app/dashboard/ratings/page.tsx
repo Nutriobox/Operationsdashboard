@@ -32,10 +32,15 @@ const HISTORY_URLS = [
 ];
 
 function isoMondayOf(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
+  // Parse and format in LOCAL time. Using toISOString() here would shift the
+  // date back a day in timezones ahead of UTC (e.g. IST), breaking the filter.
+  const [y, m, dd] = dateStr.split('-').map(Number);
+  const d = new Date(y, m - 1, dd);
   const off = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - off);
-  return d.toISOString().slice(0, 10);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${day}`;
 }
 
 function avg(nums: number[]): number | null {
@@ -153,9 +158,11 @@ export default function RatingsPage() {
     [data]
   );
 
-  // Weekly-trend controls. selOutlet '' = nothing chosen (trend hidden),
-  // 'all' = network average, otherwise a single outlet.
-  const [selOutlet, setSelOutlet] = useState<string>('');
+  // Single chart with two views: 'outlet' = snapshot across outlets,
+  // 'trend' = week-over-week for the chosen selection.
+  const [chartView, setChartView] = useState<'outlet' | 'trend'>('outlet');
+  // Weekly-trend controls. 'all' = network average, otherwise a single outlet.
+  const [selOutlet, setSelOutlet] = useState<string>('all');
   const [rangeFrom, setRangeFrom] = useState<string>('');
   const [rangeTo, setRangeTo] = useState<string>('');
 
@@ -370,18 +377,127 @@ export default function RatingsPage() {
         </div>
       </div>
 
-      {/* Ratings by outlet — current snapshot, always shown */}
+      {/* Ratings chart — one card, switch between by-outlet snapshot and weekly trend */}
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <div className="mb-4">
-          <h2 className="text-base font-semibold text-slate-800">Ratings by outlet</h2>
-          <p className="mt-0.5 text-xs text-slate-400">Zomato, Swiggy &amp; Google for each outlet (latest)</p>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-800">
+              {chartView === 'outlet' ? 'Ratings by outlet' : 'Ratings trend (weekly)'}
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-400">
+              {chartView === 'outlet'
+                ? 'Zomato, Swiggy & Google for each outlet (latest)'
+                : selOutlet === 'all'
+                ? 'All outlets (network average), week over week'
+                : `${selOutlet}, week over week`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            {/* View toggle */}
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">View</div>
+              <div className="mt-1 inline-flex rounded-lg border border-slate-200 p-0.5">
+                <button
+                  onClick={() => setChartView('outlet')}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                    chartView === 'outlet' ? 'bg-brand text-white' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  By outlet
+                </button>
+                <button
+                  onClick={() => setChartView('trend')}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                    chartView === 'trend' ? 'bg-brand text-white' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Weekly trend
+                </button>
+              </div>
+            </div>
+
+            {/* Outlet + date filters — only meaningful for the weekly trend */}
+            {chartView === 'trend' && (
+              <>
+                <div>
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Outlet</div>
+                  <select
+                    value={selOutlet}
+                    onChange={(e) => setSelOutlet(e.target.value)}
+                    className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+                  >
+                    <option value="all">All outlets</option>
+                    {outletNames.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">From</div>
+                  <input
+                    type="date"
+                    value={rangeFrom}
+                    onChange={(e) => setRangeFrom(e.target.value)}
+                    className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+                  />
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">To</div>
+                  <input
+                    type="date"
+                    value={rangeTo}
+                    onChange={(e) => setRangeTo(e.target.value)}
+                    className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
+                  />
+                </div>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Quick-number pills for the latest week in range (trend view only) */}
+        {chartView === 'trend' && pillVals && (
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            {PLATFORMS.map((p) => (
+              <div key={p.key} className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                  {p.label}
+                </div>
+                <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                  {fmt(pillVals[p.key] ?? null, 2)}{' '}
+                  <span className="text-xs font-medium text-slate-400">/ 5</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="h-96 w-full">
-          {byOutletData.length ? (
+          {chartView === 'outlet' ? (
+            byOutletData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={byOutletData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                  <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                  <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
+                  <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
+                  <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                  <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                  <Line type="monotone" dataKey="Google" stroke={platformMeta('google').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">No outlet data.</div>
+            )
+          ) : weekSeries.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={byOutletData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+              <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
                 <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
                 <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
@@ -391,106 +507,11 @@ export default function RatingsPage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">No outlet data.</div>
+            <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
+              No weeks in the selected range yet.
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Weekly ratings trend — appears after choosing an outlet */}
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-800">Ratings trend (weekly)</h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              {selOutlet === ''
-                ? 'Choose an outlet to see its week-over-week trend'
-                : selOutlet === 'all'
-                ? 'All outlets (network average)'
-                : selOutlet}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Outlet</div>
-              <select
-                value={selOutlet}
-                onChange={(e) => setSelOutlet(e.target.value)}
-                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
-              >
-                <option value="">Select&hellip;</option>
-                <option value="all">All outlets</option>
-                {outletNames.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">From</div>
-              <input
-                type="date"
-                value={rangeFrom}
-                onChange={(e) => setRangeFrom(e.target.value)}
-                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
-              />
-            </div>
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">To</div>
-              <input
-                type="date"
-                value={rangeTo}
-                onChange={(e) => setRangeTo(e.target.value)}
-                className="mt-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700"
-              />
-            </div>
-          </div>
-        </div>
-
-        {selOutlet === '' ? (
-          <div className="flex h-72 w-full items-center justify-center text-center text-sm text-slate-400">
-            Pick an outlet (or &ldquo;All outlets&rdquo;) above to see the weekly trend.
-          </div>
-        ) : (
-          <>
-            {pillVals && (
-              <div className="mb-4 grid grid-cols-3 gap-3">
-                {PLATFORMS.map((p) => (
-                  <div key={p.key} className="rounded-xl border border-slate-200 p-3">
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                      {p.label}
-                    </div>
-                    <div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
-                      {fmt(pillVals[p.key] ?? null, 2)}{' '}
-                      <span className="text-xs font-medium text-slate-400">/ 5</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="h-80 w-full">
-              {weekSeries.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                    <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
-                    <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
-                    <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
-                    <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-                    <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-                    <Line type="monotone" dataKey="Google" stroke={platformMeta('google').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
-                  No weeks in the selected range yet.
-                </div>
-              )}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Per-outlet detail cards */}

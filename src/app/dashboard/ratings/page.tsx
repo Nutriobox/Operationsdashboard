@@ -98,6 +98,49 @@ function platformMeta(key: PlatformKey) {
   return PLATFORMS.find((p) => p.key === key)!;
 }
 
+// Compact axis label: drop the "(...)" qualifier so the x-axis stays readable.
+// Full names are still shown in the chart tooltip and the outlet detail cards.
+function shortLabel(name: string): string {
+  return name.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+}
+
+// Custom x-axis tick that renders the outlet name horizontally, wrapped onto
+// two balanced lines when needed - far cleaner than rotated, clipped labels.
+function OutletTick(props: { x?: number; y?: number; payload?: { value?: string } }) {
+  const { x = 0, y = 0, payload } = props;
+  const label = String(payload?.value ?? '');
+  const words = label.split(' ');
+  let line1 = label;
+  let line2 = '';
+  if (words.length > 1) {
+    let best = 1;
+    let bestDiff = Infinity;
+    for (let i = 1; i < words.length; i++) {
+      const a = words.slice(0, i).join(' ').length;
+      const b = words.slice(i).join(' ').length;
+      const diff = Math.abs(a - b);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = i;
+      }
+    }
+    line1 = words.slice(0, best).join(' ');
+    line2 = words.slice(best).join(' ');
+  }
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fill="#64748b" fontSize={11}>
+        <tspan x={0} dy={14}>{line1}</tspan>
+        {line2 ? (
+          <tspan x={0} dy={13}>
+            {line2}
+          </tspan>
+        ) : null}
+      </text>
+    </g>
+  );
+}
+
 export default function RatingsPage() {
   const [data, setData] = useState<RatingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +194,7 @@ export default function RatingsPage() {
     () =>
       (data?.outlets ?? []).map((o) => ({
         name: o.name,
+        short: shortLabel(o.name),
         Zomato: o.zomato?.rating ?? null,
         Swiggy: o.swiggy?.rating ?? null,
         Google: o.google?.rating ?? null,
@@ -479,11 +523,14 @@ export default function RatingsPage() {
           {chartView === 'outlet' ? (
             byOutletData.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={byOutletData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                <LineChart data={byOutletData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-                  <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={90} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
-                  <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
+                  <XAxis dataKey="short" interval={0} height={44} tick={<OutletTick />} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} tickMargin={4} />
+                  <YAxis domain={[3, 5]} ticks={[3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }}
+                    labelFormatter={(short) => byOutletData.find((d) => d.short === short)?.name ?? short}
+                  />
                   <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
                   <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
                   <Line type="monotone" dataKey="Swiggy" stroke={platformMeta('swiggy').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />
@@ -498,7 +545,7 @@ export default function RatingsPage() {
               <LineChart data={weekSeries} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
                 <XAxis dataKey="week" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <YAxis domain={[3, 5]} ticks={[3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }} />
                 <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} />
                 <Line type="monotone" dataKey="Zomato" stroke={platformMeta('zomato').color} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 6 }} connectNulls />

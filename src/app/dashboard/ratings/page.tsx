@@ -100,7 +100,12 @@ function platformMeta(key: PlatformKey) {
 
 // Compact axis label: drop the "(...)" qualifier so the x-axis stays readable.
 // Full names are still shown in the chart tooltip and the outlet detail cards.
+// A couple of outlets read better as their parenthetical qualifier.
+const LABEL_OVERRIDES: Record<string, string> = {
+  'Malviya Nagar (Shivalik)': 'Shivalik',
+};
 function shortLabel(name: string): string {
+  if (LABEL_OVERRIDES[name]) return LABEL_OVERRIDES[name];
   return name.replace(/\s*\(.*?\)\s*/g, ' ').trim();
 }
 
@@ -523,7 +528,7 @@ export default function RatingsPage() {
           {chartView === 'outlet' ? (
             byOutletData.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={byOutletData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
+                <LineChart data={byOutletData} margin={{ top: 8, right: 44, left: -8, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
                   <XAxis dataKey="short" interval={0} height={44} tick={<OutletTick />} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} tickMargin={4} />
                   <YAxis domain={[3, 5]} ticks={[3, 4, 5]} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} />

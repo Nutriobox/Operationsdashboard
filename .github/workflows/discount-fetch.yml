@@ -1,0 +1,33 @@
+name: Daily discount fetch
+
+# Runs the NutrioBox Offer Tracker fetch in the cloud so it no longer depends
+# on the laptop being awake/logged-in. 05:00 IST == 23:30 UTC.
+# GitHub cron is UTC-only and can be delayed a few minutes under load; that's
+# fine because the morning health check runs at 09:35 IST.
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch: {}   # lets you run it manually from the Actions tab
+
+# Avoid overlapping runs if a manual run coincides with the schedule.
+concurrency:
+  group: discount-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch discount email and upload to Supabase
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/fetch-discount-email.mjs

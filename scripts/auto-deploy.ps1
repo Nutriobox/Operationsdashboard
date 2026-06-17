@@ -8,7 +8,7 @@
 
 $ErrorActionPreference = 'Continue'
 
-$ProjectRoot = 'C:\Users\mayank\Documents\GitHub\Operationsdashboard'
+$ProjectRoot = 'C:\Users\hp\Downloads\Operationsdashboard'
 $LogFile     = Join-Path $env:USERPROFILE 'Desktop\nutriobox-deploy.log'
 $MaxBlobBytes = 90MB   # safety margin below GitHub's 100MB cap
 

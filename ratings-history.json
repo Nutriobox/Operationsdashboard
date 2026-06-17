@@ -1,0 +1,180 @@
+{
+  "schema": "ratings-history-v1",
+  "updatedAt": "2026-06-10T07:39:53.000Z",
+  "note": "Weekly history of outlet ratings. Each entry = one ISO week. aggregate = simple average across all outlets for that platform.",
+  "weeks": [
+    {
+      "week": "W1",
+      "weekStart": "2026-06-08",
+      "weekEnd": "2026-06-14",
+      "capturedAt": "2026-06-10T07:39:53.000Z",
+      "aggregate": {
+        "zomato": 4.35,
+        "swiggy": 4.35,
+        "google": 4.35
+      },
+      "outlets": [
+        {
+          "name": "Rohini (Prashant Vihar)",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.1,
+            "reviews": 1367
+          },
+          "swiggy": {
+            "rating": 3.9,
+            "reviews": 563
+          },
+          "google": {
+            "rating": 3.9,
+            "reviews": 563
+          }
+        },
+        {
+          "name": "Janakpuri",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.4,
+            "reviews": 1308
+          },
+          "swiggy": {
+            "rating": 4.3,
+            "reviews": 517
+          },
+          "google": {
+            "rating": 4.3,
+            "reviews": 517
+          }
+        },
+        {
+          "name": "Karkardooma",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.3,
+            "reviews": 988
+          },
+          "swiggy": {
+            "rating": 4.0,
+            "reviews": 410
+          },
+          "google": {
+            "rating": 4.0,
+            "reviews": 410
+          }
+        },
+        {
+          "name": "Dwarka (Sector 6)",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.4,
+            "reviews": 1196
+          },
+          "swiggy": {
+            "rating": 4.4,
+            "reviews": 590
+          },
+          "google": {
+            "rating": 4.4,
+            "reviews": 590
+          }
+        },
+        {
+          "name": "Malviya Nagar (Shivalik)",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.5,
+            "reviews": 1028
+          },
+          "swiggy": {
+            "rating": 4.4,
+            "reviews": 250
+          },
+          "google": {
+            "rating": 4.3,
+            "reviews": 251
+          }
+        },
+        {
+          "name": "Noida Sector 142",
+          "city": "Noida",
+          "zomato": {
+            "rating": 4.7,
+            "reviews": 610
+          },
+          "swiggy": {
+            "rating": 4.4,
+            "reviews": 126
+          },
+          "google": {
+            "rating": 4.4,
+            "reviews": 126
+          }
+        },
+        {
+          "name": "Rajinder Nagar",
+          "city": "Delhi",
+          "zomato": {
+            "rating": 4.3,
+            "reviews": 596
+          },
+          "swiggy": {
+            "rating": 4.7,
+            "reviews": 1900
+          },
+          "google": {
+            "rating": 4.7,
+            "reviews": 673
+          }
+        },
+        {
+          "name": "Noida Sector 63",
+          "city": "Noida",
+          "zomato": {
+            "rating": 3.9,
+            "reviews": 9
+          },
+          "swiggy": {
+            "rating": 4.4,
+            "reviews": 1000
+          },
+          "google": {
+            "rating": 3.9,
+            "reviews": 18
+          }
+        },
+        {
+          "name": "Gurgaon DLF Phase 2",
+          "city": "Gurugram",
+          "zomato": {
+            "rating": 4.4,
+            "reviews": 27
+          },
+          "swiggy": {
+            "rating": 4.6,
+            "reviews": 1000
+          },
+          "google": {
+            "rating": 4.7,
+            "reviews": 525
+          }
+        },
+        {
+          "name": "Gurgaon Sector 15",
+          "city": "Gurugram",
+          "zomato": {
+            "rating": 4.5,
+            "reviews": 54
+          },
+          "swiggy": {
+            "rating": 4.4,
+            "reviews": 833
+          },
+          "google": {
+            "rating": 4.9,
+            "reviews": 743
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useKotHref } from './DashboardNav';
 
 /* ── SVG icon components ── */
 
@@ -48,6 +49,16 @@ function WeeklyIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
       <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
+}
+
+function KotIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M9 4h6a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V5a1 1 0 011-1z" />
+      <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+      <path d="M9 12l2 2 4-4" />
     </svg>
   );
 }
@@ -110,11 +121,14 @@ function buildWeeklyUrl(): string {
   return `https://docs.google.com/spreadsheets/d/${WEEKLY_SHEET_ID}/edit?gid=${match.gid}#gid=${match.gid}`;
 }
 
+const KOT_SHEET_ID = '1yOYpZBjohebpfpjRIfrDnUNd21bDcFcbt2vem1D_mn8';
+const KOT_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_SHEET_ID}/edit`;
+
 /* ── Card data ── */
 
 type CardDef =
   | { href: string; label: string; desc: string; icon: React.ReactNode; accent: string; internal: true }
-  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true };
+  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true; kot?: boolean };
 
 const CARDS: CardDef[] = [
   {
@@ -165,16 +179,30 @@ const CARDS: CardDef[] = [
     accent: 'from-rose-500 to-pink-600',
     external: true,
   },
+  {
+    hrefFactory: () => KOT_FALLBACK_URL,
+    label: 'Daily KOT Comparison',
+    desc: 'Total Dine In/Pickup KOT vs Captain App KOT per outlet. Opens the latest day\'s tab automatically.',
+    icon: <KotIcon />,
+    accent: 'from-indigo-500 to-blue-600',
+    external: true,
+    kot: true,
+  },
 ];
 
 /* ── Component ── */
 
 export default function DashboardCards() {
+  const kotHref = useKotHref();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {CARDS.map((card, i) => {
         const isExternal = 'external' in card;
-        const href = isExternal ? card.hrefFactory() : card.href;
+        const href = isExternal
+          ? 'kot' in card && card.kot
+            ? kotHref
+            : card.hrefFactory()
+          : card.href;
 
         const cardContent = (
           <div

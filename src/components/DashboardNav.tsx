@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // Daily Dashboard: which weekday tab in the Sales Data sheet to open.
 // "Daily" means yesterday's tab — today's numbers aren't finalized yet.
@@ -45,13 +46,42 @@ function buildWeeklyUrl(): string {
   return `https://docs.google.com/spreadsheets/d/${WEEKLY_SHEET_ID}/edit?gid=${match.gid}#gid=${match.gid}`;
 }
 
+// Daily KOT Comparison: a brand-new dated tab (with a fresh Google gid) is
+// created in this sheet every morning by the daily-kot-comparison task. That
+// task publishes the newest tab's gid to a small public JSON on Supabase, which
+// we fetch at runtime so this button always opens the latest tab. Until the
+// fetch resolves (or if it fails) we fall back to the plain sheet URL.
+const KOT_SHEET_ID = '1yOYpZBjohebpfpjRIfrDnUNd21bDcFcbt2vem1D_mn8';
+const KOT_LATEST_URL =
+  'https://jkzremlkrxhhshqouudk.supabase.co/storage/v1/object/public/reports/kot-latest.json';
+const KOT_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_SHEET_ID}/edit`;
+
+export function useKotHref(): string {
+  const [href, setHref] = useState(KOT_FALLBACK_URL);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${KOT_LATEST_URL}?t=${Date.now()}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d || !d.gid) return;
+        const id = d.sheetId || KOT_SHEET_ID;
+        setHref(`https://docs.google.com/spreadsheets/d/${id}/edit?gid=${d.gid}#gid=${d.gid}`);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return href;
+}
+
 // Each tab either navigates within the app (internal: true, uses next/link)
 // or jumps straight to an external Google Sheet (external: true, uses a
 // plain <a> tag with target="_blank" so the sheet opens in a new tab and
 // the user doesn't lose the dashboard).
 type Tab =
   | { href: string; label: string; internal: true }
-  | { hrefFactory: () => string; label: string; external: true };
+  | { hrefFactory: () => string; label: string; external: true; kot?: boolean };
 
 const TABS: Tab[] = [
   { href: '/dashboard/sales-item',    label: 'Sales Item Dashboard', internal: true },
@@ -60,10 +90,12 @@ const TABS: Tab[] = [
   { href: '/dashboard/ratings',       label: 'Ratings',              internal: true },
   { hrefFactory: buildDailyUrl,       label: 'Daily Dashboard',      external: true },
   { hrefFactory: buildWeeklyUrl,      label: 'Weekly Dashboard',     external: true },
+  { hrefFactory: () => KOT_FALLBACK_URL, label: 'Daily KOT Comparison', external: true, kot: true },
 ];
 
 export default function DashboardNav() {
   const pathname = usePathname();
+  const kotHref = useKotHref();
 
   return (
     <div className="flex justify-center px-4">
@@ -88,7 +120,7 @@ export default function DashboardNav() {
           return (
             <a
               key={t.label}
-              href={t.hrefFactory()}
+              href={'kot' in t && t.kot ? kotHref : t.hrefFactory()}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"

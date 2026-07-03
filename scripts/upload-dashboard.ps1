@@ -6,9 +6,9 @@
 
 $ErrorActionPreference = 'Continue'
 
-$ProjectRoot  = 'C:\Users\hp\Downloads\Operationsdashboard'
+$ProjectRoot  = 'C:\Users\mayank\Documents\GitHub\Operationsdashboard'
 $EnvFile      = Join-Path $ProjectRoot '.env.local'
-$ReportsDir   = 'C:\Users\hp\Downloads\NutrioBox_Reports'
+$ReportsDir   = 'C:\Users\mayank\Downloads\NutrioBox_Reports'
 $ReportGlob   = 'NutrioBox_Dashboard_*.html'
 $BucketName   = 'reports'
 $ObjectKey    = 'sales-dashboard.html'

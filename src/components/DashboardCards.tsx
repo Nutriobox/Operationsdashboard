@@ -81,6 +81,15 @@ function RatingsIcon() {
   );
 }
 
+function FeedbackIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      <path d="M8 9h8M8 13h5" />
+    </svg>
+  );
+}
+
 function ExternalArrow() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -165,6 +174,14 @@ const CARDS: CardDef[] = [
     desc: 'Monitor delivery delays, identify bottlenecks, and track on-time performance across outlets.',
     icon: <DelayIcon />,
     accent: 'from-amber-500 to-orange-600',
+    internal: true,
+  },
+  {
+    href: '/dashboard/feedback',
+    label: 'Customer Feedback',
+    desc: 'Customer feedback and satisfaction insights across outlets — spot recurring themes and track sentiment over time.',
+    icon: <FeedbackIcon />,
+    accent: 'from-blue-500 to-indigo-600',
     internal: true,
   },
   {

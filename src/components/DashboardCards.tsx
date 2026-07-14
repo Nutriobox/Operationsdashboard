@@ -90,6 +90,16 @@ function FeedbackIcon() {
   );
 }
 
+function MomosIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M3 17a9 9 0 0118 0" />
+      <path d="M3 17h18" />
+      <path d="M7.5 17V9.6M12 17V7.8M16.5 17V9.6" />
+    </svg>
+  );
+}
+
 function ExternalArrow() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -145,11 +155,13 @@ const KOT_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_SHEET_ID}
 const KOT_WEEKLY_SHEET_ID = '1eFBNV1bAwXqATegto9k0S2N9KfCGAtyufmbkpbzQX30';
 const KOT_WEEKLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_WEEKLY_SHEET_ID}/edit`;
 
+const MOMOS_DASHBOARD_URL = 'https://nutriobox-momos.higgsfield.app/';
+
 /* ── Card data ── */
 
 type CardDef =
   | { href: string; label: string; desc: string; icon: React.ReactNode; accent: string; internal: true }
-  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true; kot?: boolean; kotWeekly?: boolean };
+  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true; kot?: boolean; kotWeekly?: boolean; badge?: string; cta?: string };
 
 const CARDS: CardDef[] = [
   {
@@ -226,6 +238,16 @@ const CARDS: CardDef[] = [
     external: true,
     kotWeekly: true,
   },
+  {
+    hrefFactory: () => MOMOS_DASHBOARD_URL,
+    label: 'Momos Weekly Performance',
+    desc: 'Weekly momo sales, units sold, and veg vs non-veg mix across outlets — variants and week-over-week trends.',
+    icon: <MomosIcon />,
+    accent: 'from-orange-500 to-red-600',
+    external: true,
+    badge: 'Live Dashboard',
+    cta: 'Open dashboard',
+  },
 ];
 
 /* ── Component ── */
@@ -263,7 +285,7 @@ export default function DashboardCards() {
                 </div>
                 {isExternal && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                    Google Sheets
+                    {card.badge ?? 'Google Sheets'}
                     <ExternalArrow />
                   </span>
                 )}
@@ -281,7 +303,7 @@ export default function DashboardCards() {
 
               {/* CTA row */}
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-sm font-medium text-brand-600 group-hover:text-brand-700 transition-colors">
-                {isExternal ? 'Open in Sheets' : 'View dashboard'}
+                {isExternal ? (card.cta ?? 'Open in Sheets') : 'View dashboard'}
                 <span className="ml-1 transition-transform group-hover:translate-x-0.5">
                   {isExternal ? <ExternalArrow /> : <ChevronRight />}
                 </span>

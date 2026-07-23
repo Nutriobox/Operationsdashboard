@@ -100,6 +100,16 @@ function MomosIcon() {
   );
 }
 
+function MusicIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+}
+
 function ExternalArrow() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -202,6 +212,14 @@ const CARDS: CardDef[] = [
     desc: 'Zomato, Swiggy & Google ratings for every outlet — compare platforms and spot which locations need attention.',
     icon: <RatingsIcon />,
     accent: 'from-teal-500 to-cyan-600',
+    internal: true,
+  },
+  {
+    href: '/dashboard/music',
+    label: 'Music Monitor',
+    desc: 'Live background-music monitor for all 9 outlets — see which are playing on Bluetooth, on a laptop speaker, or not playing at all, hour by hour.',
+    icon: <MusicIcon />,
+    accent: 'from-green-500 to-emerald-600',
     internal: true,
   },
   {

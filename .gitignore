@@ -14,3 +14,4 @@ fix-and-push.ps1
 push-background-change.bat
 testfile
 testfile2
+tsconfig.tsbuildinfo

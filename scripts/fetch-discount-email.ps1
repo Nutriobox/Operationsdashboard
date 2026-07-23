@@ -161,19 +161,6 @@ $rawHtml   = [System.Text.Encoding]::UTF8.GetString($htmlBytes)
 
 Log "Extracted HTML body: $($rawHtml.Length) chars."
 
-# 4b. Strip the green "catch-up / delayed run" note banner (per Satvik, 2026-07-07).
-# The Offer Tracker email prepends a light-green <div style="background:#e8f5e9...">
-# note on manually-triggered / delayed runs; we do not want it on the website.
-# Keyed on the distinctive green background so it also catches future variants,
-# while leaving the ZOMATO/SWIGGY offer tables untouched.
-$beforeLen = $rawHtml.Length
-$rawHtml = [regex]::Replace($rawHtml, '<div[^>]*background:\s*#e8f5e9[^>]*>.*?</div>', '', ([System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Singleline))
-if ($rawHtml.Length -ne $beforeLen) {
-    Log "Stripped green note banner ($($beforeLen - $rawHtml.Length) chars removed)."
-} else {
-    Log "No green note banner present; nothing stripped."
-}
-
 # 5. Wrap with the same styling we use on the in-browser scrape
 $prettyDate = (Get-Date).ToUniversalTime().AddHours(5.5).ToString('dd MMM yyyy')
 $wrappedHtml = @"

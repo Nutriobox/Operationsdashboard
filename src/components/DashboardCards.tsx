@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useKotHref, useWeeklyKotHref } from './DashboardNav';
+import { useKotHref, useWeeklyKotHref, useMonthlyKotHref } from './DashboardNav';
 
 /* ── SVG icon components ── */
 
@@ -69,6 +69,16 @@ function WeeklyKotIcon() {
       <path d="M9 4h6a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V5a1 1 0 011-1z" />
       <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
       <path d="M8 13h3M8 17h6" />
+    </svg>
+  );
+}
+
+function MonthlyKotIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M9 4h6a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V5a1 1 0 011-1z" />
+      <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+      <path d="M8 11h8M8 15h8M11 11v6" />
     </svg>
   );
 }
@@ -164,6 +174,8 @@ const KOT_SHEET_ID = '1yOYpZBjohebpfpjRIfrDnUNd21bDcFcbt2vem1D_mn8';
 const KOT_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_SHEET_ID}/edit`;
 const KOT_WEEKLY_SHEET_ID = '1eFBNV1bAwXqATegto9k0S2N9KfCGAtyufmbkpbzQX30';
 const KOT_WEEKLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_WEEKLY_SHEET_ID}/edit`;
+const KOT_MONTHLY_SHEET_ID = '1TFCNxjX_0AGV2t2fkK_KzCMf3W9uMdSdVGbVB7_Nofw';
+const KOT_MONTHLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_MONTHLY_SHEET_ID}/edit`;
 
 const MOMOS_DASHBOARD_URL = 'https://nutriobox-momos.higgsfield.app/';
 
@@ -171,7 +183,7 @@ const MOMOS_DASHBOARD_URL = 'https://nutriobox-momos.higgsfield.app/';
 
 type CardDef =
   | { href: string; label: string; desc: string; icon: React.ReactNode; accent: string; internal: true }
-  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true; kot?: boolean; kotWeekly?: boolean; badge?: string; cta?: string };
+  | { hrefFactory: () => string; label: string; desc: string; icon: React.ReactNode; accent: string; external: true; kot?: boolean; kotWeekly?: boolean; kotMonthly?: boolean; badge?: string; cta?: string };
 
 const CARDS: CardDef[] = [
   {
@@ -257,6 +269,15 @@ const CARDS: CardDef[] = [
     kotWeekly: true,
   },
   {
+    hrefFactory: () => KOT_MONTHLY_FALLBACK_URL,
+    label: 'Monthly KOT Comparison',
+    desc: 'Monthly Dine In/Pickup KOT vs Captain App KOT per outlet. Opens the latest month\'s tab automatically.',
+    icon: <MonthlyKotIcon />,
+    accent: 'from-purple-500 to-indigo-600',
+    external: true,
+    kotMonthly: true,
+  },
+  {
     hrefFactory: () => MOMOS_DASHBOARD_URL,
     label: 'Momos Weekly Performance',
     desc: 'Weekly momo sales, units sold, and veg vs non-veg mix across outlets — variants and week-over-week trends.',
@@ -273,6 +294,7 @@ const CARDS: CardDef[] = [
 export default function DashboardCards() {
   const kotHref = useKotHref();
   const weeklyKotHref = useWeeklyKotHref();
+  const monthlyKotHref = useMonthlyKotHref();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {CARDS.map((card, i) => {
@@ -282,6 +304,8 @@ export default function DashboardCards() {
             ? kotHref
             : 'kotWeekly' in card && card.kotWeekly
             ? weeklyKotHref
+            : 'kotMonthly' in card && card.kotMonthly
+            ? monthlyKotHref
             : card.hrefFactory()
           : card.href;
 

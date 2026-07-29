@@ -1595,7 +1595,7 @@
     const per = {};
     OUTLETS.forEach(o => {
       per[o.id] = {};
-      days.forEach(d => per[o.id][d] = { audio: 0, laptop: 0, process: 0 });
+      days.forEach(d => per[o.id][d] = { audio: 0, laptop: 0, process: 0, recorded: 0 });
     });
     rows.forEach(r => {
       const hour = hourFromIsoIST(r.ts);
@@ -1605,6 +1605,7 @@
       if (r.audio_active) per[r.outlet_id][d].audio++;
       if (r.audio_active && r.output_kind === 'laptop') per[r.outlet_id][d].laptop++;
       if (r.process_running) per[r.outlet_id][d].process++;
+      per[r.outlet_id][d].recorded++;   // any check-in = this hour had data
     });
     return { days, per };
   }
@@ -1852,8 +1853,12 @@
       const laptopAvg = hpo.days.map(d => sumAt(d, 'laptop') / div);   // playing on laptop
       const btAvg = playAvg.map((p, i) => Math.max(0, p - laptopAvg[i])); // playing on Bluetooth
       const procAvg = hpo.days.map(d => sumAt(d, 'process') / div);
+      const recordedAvg = hpo.days.map(d => sumAt(d, 'recorded') / div); // hours with a check-in
       const silentAvg = playAvg.map((p, i) => Math.max(0, procAvg[i] - p));
-      const notRunAvg = procAvg.map(pr => Math.max(0, DAY_HOURS - pr));
+      // "App not working" = hours we DID record but the app was off.
+      // "No data" = hours with no check-in at all (previously lumped into red).
+      const notRunAvg = recordedAvg.map((rec, i) => Math.max(0, rec - procAvg[i]));
+      const noDataAvg = recordedAvg.map(rec => Math.max(0, DAY_HOURS - rec));
       // Clock label for a value in hours-into-the-operating-day (0 = 8:30 AM).
       const clockLabel = (v) => {
         const mins = (8 * 60 + 30) + v * 60;
@@ -1874,6 +1879,7 @@
           ds('On laptop speaker', laptopAvg, '#3b82f6'),
           ds('App on, music not playing', silentAvg, '#f59e0b'),
           ds('App not working', notRunAvg, '#ef4444'),
+          ds('No data', noDataAvg, '#c9c7bd'),
         ],
       };
       const options = {
@@ -1913,7 +1919,6 @@
           cx.font = '700 11px Inter, sans-serif';
           cx.textAlign = 'center';
           cx.textBaseline = 'middle';
-          cx.fillStyle = '#ffffff';
           const nBars = chart.data.labels.length;
           for (let i = 0; i < nBars; i++) {
             let total = 0;
@@ -1927,6 +1932,8 @@
               const p = el.getProps(['x', 'y', 'base'], true);
               const h = Math.abs(p.base - p.y);
               if (pct < 5 || h < 15) return; // skip slivers too small for text
+              // Grey "No data" band is light — use dark text so the % stays readable.
+              cx.fillStyle = dS.label === 'No data' ? '#4b5563' : '#ffffff';
               cx.fillText(pct + '%', p.x, (p.y + p.base) / 2);
             });
           }

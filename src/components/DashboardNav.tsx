@@ -62,6 +62,11 @@ const KOT_WEEKLY_LATEST_URL =
   'https://jkzremlkrxhhshqouudk.supabase.co/storage/v1/object/public/reports/kot-weekly-latest.json';
 const KOT_WEEKLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_WEEKLY_SHEET_ID}/edit`;
 
+const KOT_MONTHLY_SHEET_ID = '1TFCNxjX_0AGV2t2fkK_KzCMf3W9uMdSdVGbVB7_Nofw';
+const KOT_MONTHLY_LATEST_URL =
+  'https://jkzremlkrxhhshqouudk.supabase.co/storage/v1/object/public/reports/kot-monthly-latest.json';
+const KOT_MONTHLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_MONTHLY_SHEET_ID}/edit`;
+
 function useLatestTabHref(latestJsonUrl: string, sheetId: string, fallbackUrl: string): string {
   const [href, setHref] = useState(fallbackUrl);
   useEffect(() => {
@@ -89,13 +94,17 @@ export function useWeeklyKotHref(): string {
   return useLatestTabHref(KOT_WEEKLY_LATEST_URL, KOT_WEEKLY_SHEET_ID, KOT_WEEKLY_FALLBACK_URL);
 }
 
+export function useMonthlyKotHref(): string {
+  return useLatestTabHref(KOT_MONTHLY_LATEST_URL, KOT_MONTHLY_SHEET_ID, KOT_MONTHLY_FALLBACK_URL);
+}
+
 // Each tab either navigates within the app (internal: true, uses next/link)
 // or jumps straight to an external Google Sheet (external: true, uses a
 // plain <a> tag with target="_blank" so the sheet opens in a new tab and
 // the user doesn't lose the dashboard).
 type Tab =
   | { href: string; label: string; internal: true }
-  | { hrefFactory: () => string; label: string; external: true; kot?: boolean; kotWeekly?: boolean };
+  | { hrefFactory: () => string; label: string; external: true; kot?: boolean; kotWeekly?: boolean; kotMonthly?: boolean };
 
 const TABS: Tab[] = [
   { href: '/dashboard/sales-item',    label: 'Sales Item Dashboard', internal: true },
@@ -108,12 +117,14 @@ const TABS: Tab[] = [
   { hrefFactory: buildWeeklyUrl,      label: 'Weekly Dashboard',     external: true },
   { hrefFactory: () => KOT_FALLBACK_URL,        label: 'Daily KOT Comparison',  external: true, kot: true },
   { hrefFactory: () => KOT_WEEKLY_FALLBACK_URL, label: 'Weekly KOT Comparison', external: true, kotWeekly: true },
+  { hrefFactory: () => KOT_MONTHLY_FALLBACK_URL, label: 'Monthly KOT Comparison', external: true, kotMonthly: true },
 ];
 
 export default function DashboardNav() {
   const pathname = usePathname();
   const kotHref = useKotHref();
   const weeklyKotHref = useWeeklyKotHref();
+  const monthlyKotHref = useMonthlyKotHref();
 
   return (
     <div className="flex justify-center px-4">
@@ -140,6 +151,8 @@ export default function DashboardNav() {
               ? kotHref
               : 'kotWeekly' in t && t.kotWeekly
               ? weeklyKotHref
+              : 'kotMonthly' in t && t.kotMonthly
+              ? monthlyKotHref
               : t.hrefFactory();
           return (
             <a

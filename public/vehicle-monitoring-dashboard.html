@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Monitoring Dashboard · NutrioBox</title>
+<style>
+  :root{
+    --surface:#ffffff; --page:#f6f6f4; --border:#e7e6e2; --border-strong:#dcdbd6;
+    --ink:#111110; --ink-2:#57564f; --ink-3:#8f8e88;
+    --v1:#2a78d6; --v2:#eb6834; --v3:#1baf7a;
+    --v1-soft:#e9f1fc; --v2-soft:#fdeee7; --v3-soft:#e5f6ef;
+    --shadow:0 1px 2px rgba(17,17,16,.04), 0 1px 3px rgba(17,17,16,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:14px;line-height:1.5;padding:32px 28px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  h1{font-size:22px;font-weight:650;letter-spacing:-.02em;margin:0}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:26px;flex-wrap:wrap}
+  header .meta{color:var(--ink-2);font-size:13px;margin-top:4px}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo .mark{width:40px;height:40px;border-radius:11px;background:#0f2417;display:grid;place-items:center;color:#c6f0d8;font-weight:800;font-size:15px;letter-spacing:.02em}
+  .asof{text-align:right;font-size:12px;color:var(--ink-3)}
+  .asof b{display:block;color:var(--ink-2);font-size:13px;font-weight:600}
+
+  section{margin-bottom:22px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-h{padding:16px 20px 0}
+  .card-h .ttl{font-size:14px;font-weight:640;letter-spacing:-.01em}
+  .card-h .sub{font-size:12px;color:var(--ink-3);margin-top:2px}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:15px 16px}
+  .kpi .v{font-size:25px;font-weight:660;letter-spacing:-.03em;line-height:1.1}
+  .kpi .v .u{font-size:14px;font-weight:550;color:var(--ink-3);margin-left:2px}
+  .kpi .l{font-size:11.5px;color:var(--ink-2);margin-top:5px}
+  .kpi .spark{margin-top:9px;height:4px;border-radius:3px;background:var(--border)}
+  .kpi .spark i{display:block;height:100%;border-radius:3px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+
+  /* legend */
+  .legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:2px}
+  .legend .it{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+  .legend .sw{width:11px;height:11px;border-radius:3px}
+
+  /* timeline */
+  .tl-wrap{padding:8px 20px 18px}
+  svg{display:block;width:100%;overflow:visible}
+  .axis-line{stroke:var(--border);stroke-width:1}
+  .axis-lbl{fill:var(--ink-3);font-size:11px}
+  .row-lbl{fill:var(--ink);font-size:12.5px;font-weight:600}
+  .row-sub{fill:var(--ink-3);font-size:10.5px}
+  .drive{stroke-width:2;fill:none;stroke-linecap:round}
+  .halt-lbl{fill:var(--ink-2);font-size:10px;font-weight:600}
+  .halt-dur{fill:var(--ink-3);font-size:9.5px}
+  .depot-dot{stroke:#fff;stroke-width:1.5}
+  .depot-lbl{fill:var(--ink-2);font-size:10px;font-weight:700;letter-spacing:.01em}
+  .depot-sub{fill:var(--ink-3);font-size:9.5px}
+
+  /* bars */
+  .bar-row{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin:11px 0;font-size:12.5px}
+  .bar-row .nm{color:var(--ink-2)}
+  .track{position:relative;height:22px;background:var(--page);border-radius:6px}
+  .fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:11px;font-weight:650}
+  .stack{position:relative;height:22px;background:var(--page);border-radius:6px;overflow:hidden;display:flex}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:650;color:#fff;min-width:2px}
+  .seg.drive{background:#324a63}
+  .seg.halt{background:#c9a24a}
+  .mini-legend{display:flex;gap:14px;font-size:11px;color:var(--ink-3);padding:2px 20px 16px}
+  .mini-legend .it{display:flex;align-items:center;gap:6px}
+  .mini-legend .sw{width:10px;height:10px;border-radius:2px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;border-bottom:1px solid var(--border)}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--border)}
+  tbody tr:last-child td{border-bottom:none}
+  td.r,th.r{text-align:right}
+  .vtag{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+  .vtag .dot{width:8px;height:8px;border-radius:50%}
+  .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--v3-soft);color:#0f7551}
+  .chip.warn{background:#fbf3e4;color:#9a6a12}
+  .foot{color:var(--ink-3);font-size:11.5px;margin-top:12px;line-height:1.6}
+
+  /* trip log */
+  .tl-block{border-top:1px solid var(--border)}
+  .tl-block:first-child{border-top:none}
+  .tl-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px 10px;flex-wrap:wrap;position:relative}
+  .tl-head:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--vc)}
+  .tl-head .vname{font-weight:650;font-size:14px;display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+  .tl-head .vname .dot{width:9px;height:9px;border-radius:50%}
+  .tl-head .vmeta{font-size:11.5px;color:var(--ink-3)}
+  .tl-head .vmeta b{color:var(--ink-2);font-weight:600}
+  .tl-scroll{overflow-x:auto;padding:0 8px 6px}
+  table.triplog{width:100%;border-collapse:collapse;font-size:11.5px;min-width:1120px}
+  table.triplog thead th{text-align:left;font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:#faf9f7}
+  table.triplog td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.35}
+  table.triplog tbody tr:last-child td{border-bottom:none}
+  table.triplog tbody tr:hover td{background:#fbfbfa}
+  td.loc{max-width:150px;color:var(--ink)}
+  td.iv{max-width:135px;color:var(--ink-2)}
+  td.rem{max-width:200px;color:var(--ink-2);font-size:10.5px}
+  .tsub{color:var(--ink-3);font-size:9.5px;margin-top:2px}
+  .dash{color:#c4c3bd}
+
+  /* tooltip */
+  #tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:#1a1a18;color:#fff;
+     font-size:11.5px;padding:8px 10px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.22);z-index:50;max-width:220px}
+  #tt b{color:#fff}#tt .m{color:#b9b8b1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">
+        <div class="mark">nb</div>
+        <div>
+          <h1>Vehicle Monitoring Dashboard</h1>
+          <div class="meta">NutrioBox delivery fleet · Wednesday, 10 August 2026</div>
+        </div>
+      </div>
+    </div>
+    <div class="asof"><b>Data window</b>10:00 – 18:15 IST · source: OneLap GPS</div>
+  </header>
+
+  <section>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <div class="ttl">Route timeline</div>
+      <div class="sub">Each vehicle's day — drive segments and time spent at every outlet, on a common clock</div>
+      <div class="legend" id="tl-legend"></div>
+    </div>
+    <div class="tl-wrap"><svg id="timeline" preserveAspectRatio="xMinYMin meet"></svg></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <div class="card-h"><div class="ttl">Distance covered</div><div class="sub">Kilometres driven today, per vehicle</div></div>
+      <div style="padding:14px 20px 18px" id="distBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="ttl">Time on the road</div><div class="sub">Driving vs. time parked at outlets</div></div>
+      <div style="padding:14px 20px 4px" id="timeBars"></div>
+      <div class="mini-legend">
+        <span class="it"><span class="sw" style="background:#324a63"></span>Driving</span>
+        <span class="it"><span class="sw" style="background:#c9a24a"></span>At outlet</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><div class="ttl">Delivery stops</div><div class="sub">Every outlet visited, in order, with time spent</div></div>
+    <div style="padding:6px 6px 8px">
+      <table id="stopsTable"></table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><div class="ttl">Trip log — full detail</div><div class="sub">Every leg with all monitoring columns, exactly as in the Excel report</div></div>
+    <div id="triplog" style="padding:2px 0 8px"></div>
+  </section>
+
+  <p class="foot" id="footnote"></p>
+</div>
+
+<div id="tt"></div>
+
+<script>
+const DASH_DATA={
+"depot": "NutrioBox (Noida 63) – Depot",
+"V": [
+{
+"name": "factory vehicle",
+"color": "#2a78d6",
+"soft": "var(--v1-soft)",
+"dist": 105.6,
+"drive": 339,
+"halt": 111,
+"dispatch": "10:25",
+"ret": "17:55",
+"stops": [
+{
+"o": "NutrioBox (Shivalik)",
+"arr": "12:17",
+"dep": "12:40",
+"halt": 23
+},
+{
+"o": "NutrioBox (Sector 15, Gurugram)",
+"arr": "14:14",
+"dep": "15:02",
+"halt": 48
+},
+{
+"o": "NutrioBox (DLF Phase 2)",
+"arr": "15:16",
+"dep": "15:56",
+"halt": 40
+}
+]
+},
+{
+"name": "Factory vehicle 2",
+"color": "#eb6834",
+"soft": "var(--v2-soft)",
+"dist": 94.5,
+"drive": 224,
+"halt": 84,
+"dispatch": "10:33",
+"ret": "15:42",
+"stops": [
+{
+"o": "NutrioBox (Prashant Vihar)",
+"arr": "12:21",
+"dep": "13:17",
+"halt": 56
+},
+{
+"o": "NutrioBox (Janakpuri)",
+"arr": "13:43",
+"dep": "14:11",
+"halt": 28
+}
+]
+},
+{
+"name": "factory vehicle 3",
+"color": "#1baf7a",
+"soft": "var(--v3-soft)",
+"dist": 55.9,
+"drive": 146,
+"halt": 132,
+"dispatch": "11:33",
+"ret": "16:11",
+"stops": [
+{
+"o": "NutrioBox (Karkardooma)",
+"arr": "12:13",
+"dep": "13:07",
+"halt": 54
+},
+{
+"o": "NutrioBox (Noida)",
+"arr": "14:09",
+"dep": "15:27",
+"halt": 78
+}
+]
+}
+],
+"LEGS": {
+"factory vehicle": [
+[
+"NutrioBox (Noida 63) – Depot",
+"NutrioBox (Shivalik)",
+"10:25",
+[
+"Flyover, Trilok Puri, Delhi",
+"10:55"
+],
+[
+"Mahatma Gandhi Marg, Lajpat Nagar, Delhi",
+"11:25"
+],
+[
+"August Kranti Marg, Hauz Khas, Delhi",
+"11:55"
+],
+[
+"At NutrioBox (Shivalik)",
+"12:25"
+],
+"NutrioBox (Shivalik)",
+"1h 52m",
+"0h 23m",
+"Outlet reached before 2 Hr checkpoint – halt 0h 23m at outlet"
+],
+[
+"NutrioBox (Shivalik)",
+"NutrioBox (Sector 15, Gurugram)",
+"12:40",
+[
+"Delhi-Gurugram Expressway, Bana Singh Enclave",
+"13:10"
+],
+[
+"Delhi-Gurugram Expressway, Samalkha",
+"13:40"
+],
+[
+"Sector 31, Gurgaon",
+"14:10"
+],
+[
+"At NutrioBox (Sector 15, Gurugram)",
+"14:40"
+],
+"NutrioBox (Sector 15, Gurugram)",
+"1h 34m",
+"0h 48m",
+"Outlet reached before 2 Hr checkpoint – halt 0h 48m at outlet"
+],
+[
+"NutrioBox (Sector 15, Gurugram)",
+"NutrioBox (DLF Phase 2)",
+"15:02",
+[
+"At NutrioBox (DLF Phase 2)",
+"15:32"
+],
+null,
+null,
+null,
+"NutrioBox (DLF Phase 2)",
+"0h 14m",
+"0h 40m",
+"Outlet reached before 30 Min checkpoint – halt 0h 40m at outlet"
+],
+[
+"NutrioBox (DLF Phase 2)",
+"NutrioBox (Noida 63) – Depot",
+"15:56",
+[
+"IIT Flyover, Hauz Khas, Delhi",
+"16:26"
+],
+[
+"Lajpat Nagar Flyover, Lajpat Nagar, Delhi",
+"16:56"
+],
+[
+"Mathura Road, Sukhdev Vihar, Delhi",
+"17:26"
+],
+[
+"At NutrioBox (Noida 63) – Depot",
+"17:56"
+],
+"NutrioBox (Noida 63) – Depot",
+"1h 59m",
+"—",
+"Returned to Noida 63 depot – end of route"
+]
+],
+"Factory vehicle 2": [
+[
+"NutrioBox (Noida 63) – Depot",
+"NutrioBox (Prashant Vihar)",
+"10:33",
+[
+"Flyover, Trilok Puri, Delhi",
+"11:03"
+],
+[
+"Delhi-Dehradun Expressway, Seelampur",
+"11:33"
+],
+[
+"Doctor KB Hedgewar Marg, Bhalswa, Delhi",
+"12:03"
+],
+[
+"At NutrioBox (Prashant Vihar)",
+"12:33"
+],
+"NutrioBox (Prashant Vihar)",
+"1h 48m",
+"0h 56m",
+"Outlet reached before 2 Hr checkpoint – halt 0h 56m at outlet"
+],
+[
+"NutrioBox (Prashant Vihar)",
+"NutrioBox (Janakpuri)",
+"13:18",
+[
+"At NutrioBox (Janakpuri)",
+"13:48"
+],
+null,
+null,
+null,
+"NutrioBox (Janakpuri)",
+"0h 25m",
+"0h 28m",
+"Outlet reached before 30 Min checkpoint – halt 0h 28m at outlet"
+],
+[
+"NutrioBox (Janakpuri)",
+"NutrioBox (Noida 63) – Depot",
+"14:11",
+[
+"Cariappa Marg, Dhaula Kuan, Delhi Cantt",
+"14:41"
+],
+[
+"Lajpat Nagar Flyover, Lajpat Nagar, Delhi",
+"15:11"
+],
+[
+"Vishwakarma Road, Sector 62, Noida",
+"15:41"
+],
+[
+"At NutrioBox (Noida 63) – Depot",
+"16:11"
+],
+"NutrioBox (Noida 63) – Depot",
+"1h 31m",
+"—",
+"Returned to Noida 63 depot – end of route"
+]
+],
+"factory vehicle 3": [
+[
+"NutrioBox (Noida 63) – Depot",
+"NutrioBox (Karkardooma)",
+"11:33",
+[
+"Kalyan Puri, Delhi",
+"12:03"
+],
+[
+"At NutrioBox (Karkardooma)",
+"12:33"
+],
+[
+"At NutrioBox (Karkardooma)",
+"13:03"
+],
+null,
+"NutrioBox (Karkardooma)",
+"0h 40m",
+"0h 54m",
+"Outlet reached before 1 Hr checkpoint – halt 0h 54m at outlet"
+],
+[
+"NutrioBox (Karkardooma)",
+"NutrioBox (Noida)",
+"13:07",
+[
+"NH-24, Mayur Vihar, Delhi",
+"13:37"
+],
+[
+"Shahdara Road, Noida",
+"14:07"
+],
+[
+"At NutrioBox (Noida)",
+"14:37"
+],
+[
+"At NutrioBox (Noida)",
+"15:07"
+],
+"NutrioBox (Noida)",
+"1h 2m",
+"1h 18m",
+"Outlet reached before 1 Hr 30 Min checkpoint – halt 1h 18m at outlet"
+],
+[
+"NutrioBox (Noida)",
+"NutrioBox (Noida 63) – Depot",
+"15:27",
+[
+"Vishwakarma Road, Noida",
+"15:57"
+],
+[
+"At NutrioBox (Noida 63) – Depot",
+"16:27"
+],
+null,
+null,
+"NutrioBox (Noida 63) – Depot",
+"0h 44m",
+"—",
+"Returned to Noida 63 depot – end of route"
+]
+]
+}
+};
+const DEPOT=DASH_DATA.depot;
+const V=DASH_DATA.V;
+const tmin=s=>{const[h,m]=s.split(':').map(Number);return h*60+m;};
+const hm=m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+const fleetDist=V.reduce((s,v)=>s+v.dist,0);
+const fleetDrive=V.reduce((s,v)=>s+v.drive,0);
+const fleetHalt=V.reduce((s,v)=>s+v.halt,0);
+const deliveries=V.reduce((s,v)=>s+v.stops.length,0);
+const uniqueOutlets=new Set(V.flatMap(v=>v.stops.map(s=>s.o))).size;
+
+// KPIs
+const kpis=[
+ {v:'3<span class="u">/5</span>',l:'Vehicles active today',bar:.6,c:'var(--v3)'},
+ {v:fleetDist.toFixed(1)+'<span class="u">km</span>',l:'Total distance driven',bar:1,c:'var(--v1)'},
+ {v:deliveries,l:'Delivery stops',bar:.7,c:'var(--v2)'},
+ {v:uniqueOutlets,l:'Outlets served',bar:.7,c:'var(--v1)'},
+ {v:hm(fleetDrive),l:'Fleet driving time',bar:fleetDrive/(fleetDrive+fleetHalt),c:'#324a63'},
+ {v:hm(fleetHalt),l:'Fleet time at outlets',bar:fleetHalt/(fleetDrive+fleetHalt),c:'#c9a24a'},
+];
+document.getElementById('kpis').innerHTML=kpis.map(k=>
+ `<div class="kpi"><div class="v tnum">${k.v}</div><div class="l">${k.l}</div><div class="spark"><i style="width:${Math.round(k.bar*100)}%;background:${k.c}"></i></div></div>`).join('');
+
+// legend
+document.getElementById('tl-legend').innerHTML=V.map(v=>
+ `<span class="it"><span class="sw" style="background:${v.color}"></span>${v.name}</span>`).join('');
+
+// ---------- Timeline (SVG) ----------
+const tt=document.getElementById('tt');
+function showTT(e,html){tt.innerHTML=html;tt.style.opacity=1;moveTT(e);}
+function moveTT(e){const p=12;let x=e.clientX+p,y=e.clientY+p;if(x+230>innerWidth)x=e.clientX-230;tt.style.left=x+'px';tt.style.top=y+'px';}
+function hideTT(){tt.style.opacity=0;}
+
+(function timeline(){
+  const svg=document.getElementById('timeline');
+  const W=1000, padL=150, padR=30, padT=30, rowH=72, padB=10;
+  const T0=600, T1=1110; // 10:00 - 18:30
+  const H=padT+V.length*rowH+padB;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const x=t=>padL+(t-T0)/(T1-T0)*(W-padL-padR);
+  let s='';
+  // hour gridlines
+  for(let t=T0;t<=T1;t+=60){
+    s+=`<line class="axis-line" x1="${x(t)}" y1="${padT-8}" x2="${x(t)}" y2="${H-padB}" ${t>T0?'stroke-dasharray="2 4"':''}/>`;
+    s+=`<text class="axis-lbl tnum" x="${x(t)}" y="${padT-14}" text-anchor="middle">${String(t/60).padStart(2,'0')}:00</text>`;
+  }
+  V.forEach((v,i)=>{
+    const cy=padT+i*rowH+rowH/2-4;
+    s+=`<text class="row-lbl" x="0" y="${cy-2}">${v.name}</text>`;
+    s+=`<text class="row-sub tnum" x="0" y="${cy+13}">${v.dist.toFixed(1)} km · ${hm(v.drive)} drive</text>`;
+    // build ordered events: depot -> stops -> depot
+    const pts=[{t:v.dispatch,type:'depot'}];
+    v.stops.forEach(st=>{pts.push({t:st.arr,type:'arr',st});});
+    // draw drive segments between dep-of-prev and arr-of-next, and halt blocks
+    let prevDep=tmin(v.dispatch);
+    // depot start marker + label
+    const xs=x(tmin(v.dispatch));
+    s+=`<circle class="depot-dot" cx="${xs}" cy="${cy}" r="5.5" fill="${v.color}"
+          data-tip="<b>Noida 63 — Depot</b><br><span class='m'>Dispatched</span> ${v.dispatch}" style="cursor:pointer"/>`;
+    s+=`<text class="depot-lbl" x="${xs}" y="${cy-11}" text-anchor="middle">Noida 63</text>`;
+    s+=`<text class="depot-sub tnum" x="${xs}" y="${cy+16}" text-anchor="middle">▸ ${v.dispatch}</text>`;
+    v.stops.forEach(st=>{
+      const a=tmin(st.arr), d=tmin(st.dep);
+      s+=`<line class="drive" x1="${x(prevDep)}" y1="${cy}" x2="${x(a)}" y2="${cy}" stroke="${v.color}"/>`;
+      // halt block
+      const bw=Math.max(x(d)-x(a),3), bx=x(a), by=cy-9;
+      s+=`<rect x="${bx}" y="${by}" width="${bw}" height="18" rx="4" fill="${v.color}" fill-opacity="0.16" stroke="${v.color}" stroke-width="1.25"
+            data-tip="<b>${st.o}</b><br><span class='m'>Arrive</span> ${st.arr} &nbsp; <span class='m'>Depart</span> ${st.dep}<br><span class='m'>Halt</span> ${hm(st.halt)}${st.approx?"<br><span class='m'>⚠ nearest outlet</span>":''}" style="cursor:pointer"/>`;
+      const shortO=st.o.replace('NutrioBox (','').replace(')','').split(',')[0];
+      s+=`<text class="halt-lbl" x="${bx+bw/2}" y="${by-5}" text-anchor="middle">${shortO}</text>`;
+      s+=`<text class="halt-dur tnum" x="${bx+bw/2}" y="${by+29}" text-anchor="middle">${hm(st.halt)}</text>`;
+      prevDep=d;
+    });
+    // final drive back to depot + label
+    const xe=x(tmin(v.ret));
+    s+=`<line class="drive" x1="${x(prevDep)}" y1="${cy}" x2="${xe}" y2="${cy}" stroke="${v.color}"/>`;
+    s+=`<circle class="depot-dot" cx="${xe}" cy="${cy}" r="5.5" fill="#fff" stroke="${v.color}" stroke-width="2.5"
+          data-tip="<b>Noida 63 — Depot</b><br><span class='m'>Returned</span> ${v.ret}" style="cursor:pointer"/>`;
+    s+=`<text class="depot-lbl" x="${xe}" y="${cy-11}" text-anchor="middle">Noida 63</text>`;
+    s+=`<text class="depot-sub tnum" x="${xe}" y="${cy+16}" text-anchor="middle">◂ ${v.ret}</text>`;
+  });
+  svg.innerHTML=s;
+  svg.querySelectorAll('[data-tip]').forEach(el=>{
+    el.addEventListener('mousemove',e=>showTT(e,el.getAttribute('data-tip')));
+    el.addEventListener('mouseleave',hideTT);
+  });
+})();
+
+// ---------- distance bars ----------
+(function(){
+  const max=Math.max(...V.map(v=>v.dist));
+  document.getElementById('distBars').innerHTML=V.map(v=>
+   `<div class="bar-row"><span class="nm">${v.name}</span>
+     <div class="track"><div class="fill tnum" style="width:${Math.max(v.dist/max*100,10)}%;background:${v.color}"
+       data-tip="<b>${v.name}</b><br><span class='m'>Distance</span> ${v.dist.toFixed(1)} km">${v.dist.toFixed(1)}</div></div></div>`).join('');
+})();
+
+// ---------- time stacked bars ----------
+(function(){
+  const max=Math.max(...V.map(v=>v.drive+v.halt));
+  document.getElementById('timeBars').innerHTML=V.map(v=>{
+    const tot=v.drive+v.halt;
+    return `<div class="bar-row"><span class="nm">${v.name}</span>
+     <div class="stack" style="width:${tot/max*100}%">
+       <div class="seg drive" style="width:${v.drive/tot*100}%" data-tip="<b>${v.name}</b><br><span class='m'>Driving</span> ${hm(v.drive)}">${v.drive>60?hm(v.drive):''}</div>
+       <div class="seg halt" style="width:${v.halt/tot*100}%" data-tip="<b>${v.name}</b><br><span class='m'>At outlets</span> ${hm(v.halt)}">${v.halt>60?hm(v.halt):''}</div>
+     </div></div>`;}).join('');
+})();
+
+// ---------- stops table ----------
+(function(){
+  const rows=[];
+  V.forEach(v=>v.stops.forEach((st,i)=>rows.push({v,st,seq:i+1})));
+  const head='<thead><tr><th>Vehicle</th><th>Stop</th><th>Outlet</th><th class="r">Arrival</th><th class="r">Departure</th><th class="r">Time at outlet</th><th>Note</th></tr></thead>';
+  const body='<tbody>'+rows.map(r=>{
+    const longest=r.st.halt>=60;
+    return `<tr>
+      <td><span class="vtag"><span class="dot" style="background:${r.v.color}"></span>${r.v.name}</span></td>
+      <td class="tnum">${r.seq}</td>
+      <td>${r.st.o}</td>
+      <td class="r tnum">${r.st.arr}</td>
+      <td class="r tnum">${r.st.dep}</td>
+      <td class="r tnum" style="font-weight:600">${hm(r.st.halt)}</td>
+      <td>${r.st.approx?'<span class="chip warn">nearest outlet</span>':(longest?'<span class="chip">long halt</span>':'')}</td>
+    </tr>`;}).join('')+'</tbody>';
+  document.getElementById('stopsTable').innerHTML=head+body;
+})();
+
+// ---------- Trip log (full Excel columns) ----------
+// [start, finish, dispatch, [30loc,30t],[60loc,60t],[90loc,90t],[120loc,120t], outletReached, travel, atOutlet, remark]
+const LEGS=DASH_DATA.LEGS;
+(function tripLog(){
+  const iv=c=> (c&&c[0]) ? `${c[0]}<div class="tsub tnum">${c[1]}</div>` : '<span class="dash">–</span>';
+  document.getElementById('triplog').innerHTML=V.map(v=>{
+    const legs=LEGS[v.name];
+    const head=`<thead><tr>
+      <th>Sr</th><th>Start Destination</th><th>Finished Destination</th><th>Dispatch</th>
+      <th>After 30 Min</th><th>After 1 Hr</th><th>After 1½ Hr</th><th>After 2 Hr</th>
+      <th>Outlet Reached</th><th class="r">Total Travel</th><th class="r">At Outlet</th><th>Remarks</th></tr></thead>`;
+    const body='<tbody>'+legs.map((L,i)=>{
+      const[start,fin,disp,c30,c60,c90,c120,reached,travel,halt,rem]=L;
+      return `<tr>
+        <td class="tnum">${i+1}</td>
+        <td class="loc">${start}</td>
+        <td class="loc"><b>${fin}</b></td>
+        <td class="tnum">${disp}</td>
+        <td class="iv">${iv(c30)}</td><td class="iv">${iv(c60)}</td><td class="iv">${iv(c90)}</td><td class="iv">${iv(c120)}</td>
+        <td class="loc">${reached}</td>
+        <td class="r tnum" style="font-weight:600">${travel}</td>
+        <td class="r tnum">${halt}</td>
+        <td class="rem">${rem}</td></tr>`;}).join('')+'</tbody>';
+    return `<div class="tl-block" style="--vc:${v.color}">
+      <div class="tl-head">
+        <span class="vname"><span class="dot" style="background:${v.color}"></span>${v.name}</span>
+        <span class="vmeta">Vehicle No.: <b>${v.name}</b> &nbsp;·&nbsp; Driver: <b>—</b> &nbsp;·&nbsp; Attendant: <b>—</b> &nbsp;·&nbsp; ${legs.length} legs &nbsp;·&nbsp; ${v.dist.toFixed(1)} km</span>
+      </div>
+      <div class="tl-scroll"><table class="triplog">${head}${body}</table></div>
+    </div>`;
+  }).join('');
+})();
+
+document.getElementById('footnote').innerHTML=
+ 'Every route begins and ends at <b>NutrioBox (Noida 63) – Depot</b> — the fixed dispatch base. Delivery stops are matched to NutrioBox outlets from the master list; brief traffic/transit pauses (under ~20&nbsp;min and away from any outlet) are treated as part of the drive, not as stops. Vehicles&nbsp;4 &amp;&nbsp;5 recorded no delivery runs today. Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';
+
+window.addEventListener('scroll',hideTT,{passive:true});
+</script>
+</body>
+</html>

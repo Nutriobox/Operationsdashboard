@@ -120,6 +120,18 @@ function MusicIcon() {
   );
 }
 
+function VehicleIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M1 3h13v10H1z" />
+      <path d="M14 8h4l3 3v2h-7z" />
+      <circle cx="5.5" cy="16.5" r="1.5" />
+      <circle cx="17.5" cy="16.5" r="1.5" />
+      <path d="M7 16.5h9" />
+    </svg>
+  );
+}
+
 function ExternalArrow() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -232,6 +244,14 @@ const CARDS: CardDef[] = [
     desc: 'Live background-music monitor for all 9 outlets — see which are playing on Bluetooth, on a laptop speaker, or not playing at all, hour by hour.',
     icon: <MusicIcon />,
     accent: 'from-green-500 to-emerald-600',
+    internal: true,
+  },
+  {
+    href: '/dashboard/vehicle-monitoring',
+    label: 'Vehicle Monitoring Dashboard',
+    desc: 'Live delivery-fleet tracking from OneLap GPS — each vehicle\'s route, outlet stops, drive vs halt times, and a full trip log per leg.',
+    icon: <VehicleIcon />,
+    accent: 'from-cyan-500 to-blue-600',
     internal: true,
   },
   {

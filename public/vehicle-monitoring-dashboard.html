@@ -8,8 +8,8 @@
   :root{
     --surface:#ffffff; --page:#f6f6f4; --border:#e7e6e2; --border-strong:#dcdbd6;
     --ink:#111110; --ink-2:#57564f; --ink-3:#8f8e88;
-    --v1:#2a78d6; --v2:#eb6834; --v3:#1baf7a;
-    --v1-soft:#e9f1fc; --v2-soft:#fdeee7; --v3-soft:#e5f6ef;
+    --v1:#2a78d6; --v2:#eb6834; --v3:#1baf7a; --v4:#8a5cf6;
+    --v1-soft:#e9f1fc; --v2-soft:#fdeee7; --v3-soft:#e5f6ef; --v4-soft:#efeafe;
     --shadow:0 1px 2px rgba(17,17,16,.04), 0 1px 3px rgba(17,17,16,.06);
     --radius:14px;
   }
@@ -28,6 +28,11 @@
   .logo .mark{width:40px;height:40px;border-radius:11px;background:#0f2417;display:grid;place-items:center;color:#c6f0d8;font-weight:800;font-size:15px;letter-spacing:.02em}
   .asof{text-align:right;font-size:12px;color:var(--ink-3)}
   .asof b{display:block;color:var(--ink-2);font-size:13px;font-weight:600}
+  .datefilter{display:inline-flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px;color:var(--ink-2);font-weight:600}
+  .datefilter input{font:inherit;font-weight:600;color:var(--ink-1);padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+  .datefilter input:hover{border-color:var(--v1)}
+  #noData{display:none;margin:18px 0 0;padding:13px 17px;background:#fff4e5;border:1px solid #f0c98a;border-radius:10px;color:#8a5a12;font-size:13px}
+  #board{transition:opacity .2s}
 
   section{margin-bottom:22px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -125,15 +130,20 @@
   <header>
     <div>
       <div class="logo">
-        <div class="mark">nb</div>
         <div>
           <h1>Vehicle Monitoring Dashboard</h1>
-          <div class="meta">NutrioBox delivery fleet · Wednesday, 10 August 2026</div>
+          <div class="meta">NutrioBox delivery fleet · Tuesday, 11 August 2026</div>
         </div>
       </div>
     </div>
-    <div class="asof"><b>Data window</b>10:00 – 18:15 IST · source: OneLap GPS</div>
+    <div class="asof">
+      <label class="datefilter">View date <input type="date" id="dateFilter"></label>
+      <b>Data window</b><span id="dwtext">Full day to 17:56 IST</span> · source: OneLap GPS
+    </div>
   </header>
+
+  <div id="noData"></div>
+  <div id="board">
 
   <section>
     <div class="kpis" id="kpis"></div>
@@ -176,251 +186,171 @@
   </section>
 
   <p class="foot" id="footnote"></p>
+  </div>
 </div>
 
 <div id="tt"></div>
 
 <script>
-const DASH_DATA={
+const DATASETS={"2026-08-11":{
 "depot": "NutrioBox (Noida 63) – Depot",
 "V": [
 {
 "name": "factory vehicle",
 "color": "#2a78d6",
 "soft": "var(--v1-soft)",
-"dist": 105.6,
-"drive": 339,
-"halt": 111,
-"dispatch": "10:25",
-"ret": "17:55",
-"stops": [
-{
-"o": "NutrioBox (Shivalik)",
-"arr": "12:17",
-"dep": "12:40",
-"halt": 23
-},
-{
-"o": "NutrioBox (Sector 15, Gurugram)",
-"arr": "14:14",
-"dep": "15:02",
-"halt": 48
-},
-{
-"o": "NutrioBox (DLF Phase 2)",
-"arr": "15:16",
-"dep": "15:56",
-"halt": 40
-}
-]
+"dist": 85.5,
+"drive": 154,
+"halt": 193,
+"dispatch": "12:08",
+"ret": "17:56",
+"stillOut": true,
+"stops": []
 },
 {
 "name": "Factory vehicle 2",
 "color": "#eb6834",
 "soft": "var(--v2-soft)",
-"dist": 94.5,
-"drive": 224,
-"halt": 84,
-"dispatch": "10:33",
-"ret": "15:42",
-"stops": [
-{
-"o": "NutrioBox (Prashant Vihar)",
-"arr": "12:21",
-"dep": "13:17",
-"halt": 56
-},
-{
-"o": "NutrioBox (Janakpuri)",
-"arr": "13:43",
-"dep": "14:11",
-"halt": 28
-}
-]
+"dist": 82.5,
+"drive": 151,
+"halt": 92,
+"dispatch": "12:19",
+"ret": "16:22",
+"stillOut": false,
+"stops": []
 },
 {
 "name": "factory vehicle 3",
 "color": "#1baf7a",
 "soft": "var(--v3-soft)",
-"dist": 55.9,
-"drive": 146,
-"halt": 132,
-"dispatch": "11:33",
-"ret": "16:11",
-"stops": [
-{
-"o": "NutrioBox (Karkardooma)",
-"arr": "12:13",
-"dep": "13:07",
-"halt": 54
+"dist": 94.9,
+"drive": 171,
+"halt": 112,
+"dispatch": "12:20",
+"ret": "17:03",
+"stillOut": false,
+"stops": []
 },
 {
-"o": "NutrioBox (Noida)",
-"arr": "14:09",
-"dep": "15:27",
-"halt": 78
-}
-]
+"name": "factory vehicle 4",
+"color": "#8a5cf6",
+"soft": "var(--v4-soft)",
+"dist": 57.5,
+"drive": 137,
+"halt": 161,
+"dispatch": "12:37",
+"ret": "17:35",
+"stillOut": false,
+"stops": []
 }
 ],
 "LEGS": {
 "factory vehicle": [
 [
 "NutrioBox (Noida 63) – Depot",
+"Jamia Nagar (not a listed outlet)",
+"12:08",
+null,
+null,
+null,
+null,
+"Jamia Nagar (not a listed outlet)",
+"0h 16m",
+"0h 34m",
+"Stop 0h 34m – not in 10-outlet master list (confirm name)"
+],
+[
+"Jamia Nagar (not a listed outlet)",
 "NutrioBox (Shivalik)",
-"10:25",
-[
-"Flyover, Trilok Puri, Delhi",
-"10:55"
-],
-[
-"Mahatma Gandhi Marg, Lajpat Nagar, Delhi",
-"11:25"
-],
-[
-"August Kranti Marg, Hauz Khas, Delhi",
-"11:55"
-],
-[
-"At NutrioBox (Shivalik)",
-"12:25"
-],
+"12:58",
+null,
+null,
+null,
+null,
 "NutrioBox (Shivalik)",
-"1h 52m",
 "0h 23m",
-"Outlet reached before 2 Hr checkpoint – halt 0h 23m at outlet"
+"1h 01m",
+"Outlet reached – halt 1h 01m at outlet"
 ],
 [
 "NutrioBox (Shivalik)",
 "NutrioBox (Sector 15, Gurugram)",
-"12:40",
-[
-"Delhi-Gurugram Expressway, Bana Singh Enclave",
-"13:10"
-],
+"14:22",
 [
 "Delhi-Gurugram Expressway, Samalkha",
-"13:40"
+"14:52"
 ],
-[
-"Sector 31, Gurgaon",
-"14:10"
-],
-[
-"At NutrioBox (Sector 15, Gurugram)",
-"14:40"
-],
+null,
+null,
+null,
 "NutrioBox (Sector 15, Gurugram)",
-"1h 34m",
-"0h 48m",
-"Outlet reached before 2 Hr checkpoint – halt 0h 48m at outlet"
+"0h 56m",
+"0h 42m",
+"Outlet reached – halt 0h 42m at outlet"
 ],
 [
 "NutrioBox (Sector 15, Gurugram)",
-"NutrioBox (DLF Phase 2)",
-"15:02",
-[
-"At NutrioBox (DLF Phase 2)",
-"15:32"
-],
+"Netaji Nagar (not a listed outlet)",
+"16:00",
 null,
 null,
 null,
-"NutrioBox (DLF Phase 2)",
-"0h 14m",
-"0h 40m",
-"Outlet reached before 30 Min checkpoint – halt 0h 40m at outlet"
-],
-[
-"NutrioBox (DLF Phase 2)",
-"NutrioBox (Noida 63) – Depot",
-"15:56",
-[
-"IIT Flyover, Hauz Khas, Delhi",
-"16:26"
-],
-[
-"Lajpat Nagar Flyover, Lajpat Nagar, Delhi",
-"16:56"
-],
-[
-"Mathura Road, Sukhdev Vihar, Delhi",
-"17:26"
-],
-[
-"At NutrioBox (Noida 63) – Depot",
-"17:56"
-],
-"NutrioBox (Noida 63) – Depot",
-"1h 59m",
-"—",
-"Returned to Noida 63 depot – end of route"
+null,
+"Netaji Nagar (not a listed outlet)",
+"0h 59m",
+"0h 56m",
+"Currently at this location (as of 17:56) – not yet returned to depot"
 ]
 ],
 "Factory vehicle 2": [
 [
 "NutrioBox (Noida 63) – Depot",
-"NutrioBox (Prashant Vihar)",
-"10:33",
-[
-"Flyover, Trilok Puri, Delhi",
-"11:03"
-],
-[
-"Delhi-Dehradun Expressway, Seelampur",
-"11:33"
-],
-[
-"Doctor KB Hedgewar Marg, Bhalswa, Delhi",
-"12:03"
-],
-[
-"At NutrioBox (Prashant Vihar)",
-"12:33"
-],
-"NutrioBox (Prashant Vihar)",
-"1h 48m",
-"0h 56m",
-"Outlet reached before 2 Hr checkpoint – halt 0h 56m at outlet"
-],
-[
-"NutrioBox (Prashant Vihar)",
-"NutrioBox (Janakpuri)",
-"13:18",
-[
-"At NutrioBox (Janakpuri)",
-"13:48"
-],
+"Kalyan Puri (not a listed outlet)",
+"12:19",
 null,
 null,
 null,
-"NutrioBox (Janakpuri)",
-"0h 25m",
-"0h 28m",
-"Outlet reached before 30 Min checkpoint – halt 0h 28m at outlet"
+null,
+"Kalyan Puri (not a listed outlet)",
+"0h 07m",
+"0h 21m",
+"Stop 0h 21m – not in 10-outlet master list (confirm name)"
 ],
 [
-"NutrioBox (Janakpuri)",
+"Kalyan Puri (not a listed outlet)",
+"NutrioBox (Prashant Vihar)",
+"12:47",
+[
+"Majnu Ka Tila, Delhi",
+"13:17"
+],
+[
+"Outer Ring Road, Pitampura, Delhi",
+"13:47"
+],
+null,
+null,
+"NutrioBox (Prashant Vihar)",
+"1h 14m",
+"1h 11m",
+"Outlet reached – halt 1h 11m at outlet"
+],
+[
+"NutrioBox (Prashant Vihar)",
 "NutrioBox (Noida 63) – Depot",
-"14:11",
+"15:12",
 [
-"Cariappa Marg, Dhaula Kuan, Delhi Cantt",
-"14:41"
+"Mahatma Gandhi Marg, Civil Lines, Delhi",
+"15:42"
 ],
 [
-"Lajpat Nagar Flyover, Lajpat Nagar, Delhi",
-"15:11"
+"DME Service Road, Kalyan Puri, Delhi",
+"16:12"
 ],
-[
-"Vishwakarma Road, Sector 62, Noida",
-"15:41"
-],
-[
-"At NutrioBox (Noida 63) – Depot",
-"16:11"
-],
+null,
+null,
 "NutrioBox (Noida 63) – Depot",
-"1h 31m",
+"1h 10m",
 "—",
 "Returned to Noida 63 depot – end of route"
 ]
@@ -428,89 +358,160 @@ null,
 "factory vehicle 3": [
 [
 "NutrioBox (Noida 63) – Depot",
-"NutrioBox (Karkardooma)",
-"11:33",
-[
-"Kalyan Puri, Delhi",
-"12:03"
+"Jamia Nagar (not a listed outlet)",
+"12:20",
+null,
+null,
+null,
+null,
+"Jamia Nagar (not a listed outlet)",
+"0h 28m",
+"0h 25m",
+"Stop 0h 25m – not in 10-outlet master list (confirm name)"
 ],
 [
-"At NutrioBox (Karkardooma)",
-"12:33"
-],
+"Jamia Nagar (not a listed outlet)",
+"NutrioBox (Janakpuri)",
+"13:12",
 [
-"At NutrioBox (Karkardooma)",
-"13:03"
+"Cariappa Marg, Dhaula Kuan, Delhi Cantt",
+"13:42"
 ],
 null,
-"NutrioBox (Karkardooma)",
-"0h 40m",
-"0h 54m",
-"Outlet reached before 1 Hr checkpoint – halt 0h 54m at outlet"
+null,
+null,
+"NutrioBox (Janakpuri)",
+"0h 45m",
+"1h 06m",
+"Outlet reached – halt 1h 06m at outlet"
 ],
 [
-"NutrioBox (Karkardooma)",
-"NutrioBox (Noida)",
-"13:07",
-[
-"NH-24, Mayur Vihar, Delhi",
-"13:37"
+"NutrioBox (Janakpuri)",
+"Nawada (not a listed outlet)",
+"15:03",
+null,
+null,
+null,
+null,
+"Nawada (not a listed outlet)",
+"0h 12m",
+"0h 21m",
+"Stop 0h 21m – not in 10-outlet master list (confirm name)"
 ],
 [
-"Shahdara Road, Noida",
-"14:07"
-],
-[
-"At NutrioBox (Noida)",
-"14:37"
-],
-[
-"At NutrioBox (Noida)",
-"15:07"
-],
-"NutrioBox (Noida)",
-"1h 2m",
-"1h 18m",
-"Outlet reached before 1 Hr 30 Min checkpoint – halt 1h 18m at outlet"
-],
-[
-"NutrioBox (Noida)",
+"Nawada (not a listed outlet)",
 "NutrioBox (Noida 63) – Depot",
-"15:27",
+"15:37",
+null,
 [
-"Vishwakarma Road, Noida",
-"15:57"
-],
-[
-"At NutrioBox (Noida 63) – Depot",
-"16:27"
+"Delhi-Dehradun Expressway, Preet Vihar",
+"16:37"
 ],
 null,
 null,
 "NutrioBox (Noida 63) – Depot",
-"0h 44m",
+"1h 26m",
+"—",
+"Returned to Noida 63 depot – end of route"
+]
+],
+"factory vehicle 4": [
+[
+"NutrioBox (Noida 63) – Depot",
+"NutrioBox (Karkardooma)",
+"12:37",
+[
+"DME Service Road, Kalyan Puri, Delhi",
+"13:07"
+],
+null,
+null,
+null,
+"NutrioBox (Karkardooma)",
+"0h 46m",
+"1h 01m",
+"Outlet reached – halt 1h 01m at outlet"
+],
+[
+"NutrioBox (Karkardooma)",
+"NutrioBox (Noida)",
+"14:24",
+[
+"Dadri Road, Chilla, Noida",
+"14:54"
+],
+null,
+null,
+null,
+"NutrioBox (Noida)",
+"0h 49m",
+"1h 40m",
+"Outlet reached – halt 1h 40m at outlet"
+],
+[
+"NutrioBox (Noida)",
+"NutrioBox (Noida 63) – Depot",
+"16:53",
+[
+"Vishwakarma Road, Mamura, Noida",
+"17:23"
+],
+null,
+null,
+null,
+"NutrioBox (Noida 63) – Depot",
+"0h 42m",
 "—",
 "Returned to Noida 63 depot – end of route"
 ]
 ]
 }
-};
-const DEPOT=DASH_DATA.depot;
-const V=DASH_DATA.V;
+}};
+const AVAILDATES=Object.keys(DATASETS).sort();
+function render(CURDATE){
+  const DASH_DATA=DATASETS[CURDATE];
+  const board=document.getElementById('board'), notice=document.getElementById('noData');
+  if(!DASH_DATA){notice.style.display='block';notice.textContent='No vehicle-monitoring data for '+CURDATE+' — a report is generated per day. Pick a date that has data.';board.style.opacity='0.2';return;}
+  notice.style.display='none';board.style.opacity='1';
+  try{document.querySelector('.meta').textContent='NutrioBox delivery fleet · '+new Date(CURDATE+'T00:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(e){}
+  const DEPOT=DASH_DATA.depot;
+  const V=DASH_DATA.V;
 const tmin=s=>{const[h,m]=s.split(':').map(Number);return h*60+m;};
 const hm=m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+const durMin=s=>{if(!s||s==='—')return 0;const m=String(s).match(/(\d+)\s*h\s*(\d+)\s*m/);if(m)return +m[1]*60+ +m[2];const mm=String(s).match(/(\d+)\s*m/);return mm?+mm[1]:0;};
+const addMin=(hhmm,mins)=>{const t=tmin(hhmm)+mins;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');};
+// Single source of truth: derive dispatch / return / stops / drive / halt for every
+// vehicle straight from LEGS, so the Route timeline and Trip log can never disagree.
+V.forEach(v=>{
+  const legs=(DASH_DATA.LEGS||{})[v.name];
+  if(!legs||!legs.length)return;
+  v.dispatch=legs[0][2];
+  const stops=[];let drive=0,halt=0;
+  legs.forEach((L,i)=>{
+    const disp=L[2],travel=durMin(L[8]);drive+=travel;
+    const arr=addMin(disp,travel);
+    const isLast=i===legs.length-1;
+    const finIsDepot=/Depot/i.test(L[1]);
+    if(isLast&&finIsDepot){v.ret=arr;return;}
+    const dep=(i+1<legs.length)?legs[i+1][2]:addMin(arr,durMin(L[9]));
+    const h=Math.max(tmin(dep)-tmin(arr),0);halt+=h;
+    stops.push({o:L[7]||L[1],arr,dep,halt:h});
+  });
+  v.stops=stops;v.drive=drive;v.halt=halt;
+  if(!v.ret){const L=legs[legs.length-1];v.ret=addMin(L[2],durMin(L[8]));}
+});
 const fleetDist=V.reduce((s,v)=>s+v.dist,0);
 const fleetDrive=V.reduce((s,v)=>s+v.drive,0);
 const fleetHalt=V.reduce((s,v)=>s+v.halt,0);
 const deliveries=V.reduce((s,v)=>s+v.stops.length,0);
-const uniqueOutlets=new Set(V.flatMap(v=>v.stops.map(s=>s.o))).size;
+const uniqueOutlets=new Set(V.flatMap(v=>v.stops.map(s=>s.o)).filter(o=>o.startsWith("NutrioBox ("))).size;
 
 // KPIs
 const kpis=[
- {v:'3<span class="u">/5</span>',l:'Vehicles active today',bar:.6,c:'var(--v3)'},
+ {v:'4<span class="u">/5</span>',l:'Vehicles active today',bar:.8,c:'var(--v4)'},
  {v:fleetDist.toFixed(1)+'<span class="u">km</span>',l:'Total distance driven',bar:1,c:'var(--v1)'},
  {v:deliveries,l:'Delivery stops',bar:.7,c:'var(--v2)'},
- {v:uniqueOutlets,l:'Outlets served',bar:.7,c:'var(--v1)'},
+ {v:uniqueOutlets,l:'NutrioBox outlets served',bar:.7,c:'var(--v1)'},
  {v:hm(fleetDrive),l:'Fleet driving time',bar:fleetDrive/(fleetDrive+fleetHalt),c:'#324a63'},
  {v:hm(fleetHalt),l:'Fleet time at outlets',bar:fleetHalt/(fleetDrive+fleetHalt),c:'#c9a24a'},
 ];
@@ -553,8 +554,8 @@ function hideTT(){tt.style.opacity=0;}
     const xs=x(tmin(v.dispatch));
     s+=`<circle class="depot-dot" cx="${xs}" cy="${cy}" r="5.5" fill="${v.color}"
           data-tip="<b>Noida 63 — Depot</b><br><span class='m'>Dispatched</span> ${v.dispatch}" style="cursor:pointer"/>`;
-    s+=`<text class="depot-lbl" x="${xs}" y="${cy-11}" text-anchor="middle">Noida 63</text>`;
-    s+=`<text class="depot-sub tnum" x="${xs}" y="${cy+16}" text-anchor="middle">▸ ${v.dispatch}</text>`;
+    s+=`<text class="depot-lbl" x="${xs-9}" y="${cy-3}" text-anchor="end">Noida 63</text>`;
+    s+=`<text class="depot-sub tnum" x="${xs-9}" y="${cy+11}" text-anchor="end">▸ ${v.dispatch}</text>`;
     v.stops.forEach(st=>{
       const a=tmin(st.arr), d=tmin(st.dep);
       s+=`<line class="drive" x1="${x(prevDep)}" y1="${cy}" x2="${x(a)}" y2="${cy}" stroke="${v.color}"/>`;
@@ -562,18 +563,26 @@ function hideTT(){tt.style.opacity=0;}
       const bw=Math.max(x(d)-x(a),3), bx=x(a), by=cy-9;
       s+=`<rect x="${bx}" y="${by}" width="${bw}" height="18" rx="4" fill="${v.color}" fill-opacity="0.16" stroke="${v.color}" stroke-width="1.25"
             data-tip="<b>${st.o}</b><br><span class='m'>Arrive</span> ${st.arr} &nbsp; <span class='m'>Depart</span> ${st.dep}<br><span class='m'>Halt</span> ${hm(st.halt)}${st.approx?"<br><span class='m'>⚠ nearest outlet</span>":''}" style="cursor:pointer"/>`;
-      const shortO=st.o.replace('NutrioBox (','').replace(')','').split(',')[0];
+      const shortO=(st.o.startsWith('NutrioBox (')?st.o.slice(11).replace(/\).*/,''):st.o.replace(/\s*\(not a listed outlet\)/,'')).split(',')[0];
       s+=`<text class="halt-lbl" x="${bx+bw/2}" y="${by-5}" text-anchor="middle">${shortO}</text>`;
       s+=`<text class="halt-dur tnum" x="${bx+bw/2}" y="${by+29}" text-anchor="middle">${hm(st.halt)}</text>`;
       prevDep=d;
     });
-    // final drive back to depot + label
-    const xe=x(tmin(v.ret));
-    s+=`<line class="drive" x1="${x(prevDep)}" y1="${cy}" x2="${xe}" y2="${cy}" stroke="${v.color}"/>`;
-    s+=`<circle class="depot-dot" cx="${xe}" cy="${cy}" r="5.5" fill="#fff" stroke="${v.color}" stroke-width="2.5"
-          data-tip="<b>Noida 63 — Depot</b><br><span class='m'>Returned</span> ${v.ret}" style="cursor:pointer"/>`;
-    s+=`<text class="depot-lbl" x="${xe}" y="${cy-11}" text-anchor="middle">Noida 63</text>`;
-    s+=`<text class="depot-sub tnum" x="${xe}" y="${cy+16}" text-anchor="middle">◂ ${v.ret}</text>`;
+    // end marker: depot return, or "still out" current position
+    if(v.stillOut){
+      const xc=x(prevDep);
+      s+=`<circle cx="${xc}" cy="${cy}" r="5.5" fill="${v.color}" stroke="#fff" stroke-width="2"
+            data-tip="<b>Still out</b><br><span class='m'>Last seen</span> ${v.ret} — not yet returned to depot" style="cursor:pointer"/>`;
+      s+=`<text class="depot-lbl" x="${xc+9}" y="${cy-3}" text-anchor="start" fill="#c2410c">out</text>`;
+      s+=`<text class="depot-sub tnum" x="${xc+9}" y="${cy+11}" text-anchor="start" fill="#c2410c">● ${v.ret}</text>`;
+    } else {
+      const xe=x(tmin(v.ret));
+      s+=`<line class="drive" x1="${x(prevDep)}" y1="${cy}" x2="${xe}" y2="${cy}" stroke="${v.color}"/>`;
+      s+=`<circle class="depot-dot" cx="${xe}" cy="${cy}" r="5.5" fill="#fff" stroke="${v.color}" stroke-width="2.5"
+            data-tip="<b>Noida 63 — Depot</b><br><span class='m'>Returned</span> ${v.ret}" style="cursor:pointer"/>`;
+      s+=`<text class="depot-lbl" x="${xe+9}" y="${cy-3}" text-anchor="start">Noida 63</text>`;
+      s+=`<text class="depot-sub tnum" x="${xe+9}" y="${cy+11}" text-anchor="start">◂ ${v.ret}</text>`;
+    }
   });
   svg.innerHTML=s;
   svg.querySelectorAll('[data-tip]').forEach(el=>{
@@ -656,9 +665,15 @@ const LEGS=DASH_DATA.LEGS;
 })();
 
 document.getElementById('footnote').innerHTML=
- 'Every route begins and ends at <b>NutrioBox (Noida 63) – Depot</b> — the fixed dispatch base. Delivery stops are matched to NutrioBox outlets from the master list; brief traffic/transit pauses (under ~20&nbsp;min and away from any outlet) are treated as part of the drive, not as stops. Vehicles&nbsp;4 &amp;&nbsp;5 recorded no delivery runs today. Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';
+ 'Every route begins and ends at <b>NutrioBox (Noida 63) – Depot</b> — the fixed dispatch base. Delivery stops are matched to NutrioBox outlets from the master list; brief traffic/transit pauses (under ~20&nbsp;min and away from any outlet) are treated as part of the drive, not as stops. Vehicle&nbsp;5 recorded no delivery run today. Some stops (Jamia Nagar, Kalyan Puri, Nawada) did not match the 10-outlet master list and are shown by their locality — please confirm their outlet names. factory&nbsp;vehicle was still out (not yet returned to depot) at the 17:56 snapshot. Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';
 
-window.addEventListener('scroll',hideTT,{passive:true});
+}
+window.addEventListener('scroll',()=>{const t=document.getElementById('tt');if(t)t.style.opacity=0;},{passive:true});
+const _df=document.getElementById('dateFilter');
+_df.value=AVAILDATES[AVAILDATES.length-1];
+_df.min=AVAILDATES[0];
+_df.addEventListener('change',e=>render(e.target.value));
+render(_df.value);
 </script>
 </body>
 </html>

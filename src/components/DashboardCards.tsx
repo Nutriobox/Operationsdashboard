@@ -189,7 +189,7 @@ const KOT_WEEKLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_WE
 const KOT_MONTHLY_SHEET_ID = '1TFCNxjX_0AGV2t2fkK_KzCMf3W9uMdSdVGbVB7_Nofw';
 const KOT_MONTHLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_MONTHLY_SHEET_ID}/edit`;
 
-const MOMOS_DASHBOARD_URL = 'https://nutriobox-momos.higgsfield.app/';
+const MOMOS_DASHBOARD_URL = '/nutriobox-momos-dashboard.html';
 
 /* ── Card data ── */
 

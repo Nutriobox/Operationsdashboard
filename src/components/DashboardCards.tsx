@@ -526,6 +526,235 @@ const FLOWS: Record<string, Flow> = {
   },
 };
 
+/* ── Technical architecture diagrams (developer view) — real endpoints,
+   scripts, data structures, storage paths, cron and serving routes. ── */
+
+const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
+  'Sales Item Dashboard': {
+    stack: 'Windows Task Scheduler · Playwright · Python 3.14 · requests/bs4 · Supabase Storage · Next.js/Vercel',
+    nodes: [
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['Tasks NutrioBox-DailyData-AM (04:00) / -PM (16:00), IST', 'Runs automation\\run_daily.bat → refresh_tokens.py → daily_data.py', 'Run mode: IST hour<12 ⇒ yesterday full day, else today partial'],
+        edge: 'formerly Cowork task nutriobox-daily-data-v2' },
+      { stage: 'AUTH — refresh_tokens.py',
+        detail: ['Playwright persistent context (secrets/browser-profile)', 'Harvests cookies → secrets/tokens.json', 'petpooja.Petpooja.from_tokens() attaches cookie to a requests.Session'],
+        edge: '' },
+      { stage: 'EXPORT — browser_export.py (Playwright)',
+        detail: ['GET billing.petpooja.com/reports/order_summary_item', 'JS sets data[Order][startdate|enddate] + selects 10 outlets (excl 399785)', 'Click Export → read S3 <a href> → download CSV', 'Double export, NBDD_EXPORT_SLEEP=180s; larger row count wins'],
+        edge: '' },
+      { stage: 'DEDUPE — daily_data.dedupe_csv()',
+        detail: ['csv.DictReader; status in {Success, Cancelled}', 'key = (restaurant_name, invoice_no), first row kept', 'record{qty,date,time,totalSales(Success only),orderType,...}', 'afternoon: drop date==target && time<08:00'],
+        edge: '' },
+      { stage: 'ADD-ONS — browser_export.scrape_addons()',
+        detail: ['Report 31 is JS-rendered ⇒ Playwright, not HTTP', 'switch outlet: POST / (header_changed_rest_id)', 'GET custom_reports/view_report/31 → set re_filter_filed_1_23_* → Search', 'scrape #re_pivot_table_1; verify sums vs Total row; 10× config.OUTLETS'],
+        edge: '' },
+      { stage: 'RECONCILE — pos_dashboard_total() (morning)',
+        detail: ['GET billing.petpooja.com/users/dashboard → parse Total Sales', 'if export_total < pos_total − 200 ⇒ one extra export'],
+        edge: '' },
+      { stage: 'REBUILD — dashboard_build.rebuild()',
+        detail: ['Byte-slice ~135MB HTML at marker "const DAILY_DATA=" (17 chars)', 'drop target biz-day (time≥08:00) + next-day <01:00; keep <08:00 tail', 'append; prev-day sales delta MUST == 0 else abort', 'write once → NutrioBox_Reports\\NutrioBox_Dashboard_*.html'],
+        edge: '' },
+      { stage: 'PUBLISH — dashboard_build.publish()',
+        detail: ['gzip -9 → POST Supabase /storage/v1/object/reports/sales-dashboard.html', 'headers: apikey + Bearer SERVICE_ROLE_KEY, Content-Encoding: gzip, x-upsert', 'verify: re-download (cache-bust) → gunzip → md5 == local (retry ×4)'],
+        edge: '' },
+      { stage: 'SERVE — Next.js on Vercel',
+        detail: ['/api/sales-dashboard proxies the gzip object', 'iframe at /dashboard/sales-item; Supabase project jkzremlkrxhhshqouudk', 'claude_assist.py = env-gated fallback (ANTHROPIC_API_KEY), off by default'] },
+    ],
+  },
+
+  'Discount Codes': {
+    stack: 'Cowork task (cron) · Zomato REST · Swiggy GraphQL · Google Apps Script · Gmail API · Supabase · Next.js',
+    nodes: [
+      { stage: 'TRIGGERS — Cowork tasks',
+        detail: ['daily-offer-tracker: cron 0 4 * * * (~4:09 IST)', 'nutriobox-discount-report-daily-upload: cron 0 5 * * *', 'Mailbox: mayank@nutriobox.com'],
+        edge: '' },
+      { stage: 'ZOMATO — REST fetch',
+        detail: ['GET www.zomato.com/merchant-api/growth/offers/track-offers?res_id=&status=active', 'credentials:include; parse ratecard_list; dedupe (title,minOrder)', 'classify Standard vs Extra by title/minOrder patterns'],
+        edge: '' },
+      { stage: 'SWIGGY — GraphQL POST',
+        detail: ['POST vhc-composer.swiggy.com/query', 'header access_token from partner.swiggy.com localStorage', 'ssdSubscriptionDetails(restaurantIds:[…] status:["ACTIVE"])', 'no credentials:include (avoids CORS preflight)'],
+        edge: 'on fail: one-shot retry tasks +5/+10/+15 min' },
+      { stage: 'BUILD — inline-CSS HTML',
+        detail: ['one row per code = union of RIDs; n/10 column', 'localStorage {runId,data} envelopes (no cross-run reuse)', '15 blocking QA checks (10 RIDs, band counts)'],
+        edge: '' },
+      { stage: 'SEND — Apps Script Web App',
+        detail: ['POST script.google.com/.../exec  mode:no-cors, text/plain', 'GmailApp.sendEmail preserves HTML (thread prefix Ktbx)'],
+        edge: '' },
+      { stage: 'UPLOAD — discount report job',
+        detail: ['Gmail API (refresh token) from:"NutrioBox Offer Tracker" newer_than:1d', 'wrap HTML → PUT Supabase reports/discount-codes-YYYY-MM-DD.html (x-upsert)'],
+        edge: '' },
+      { stage: 'SERVE — Next.js',
+        detail: ['/api/discount-codes-report?date= and /api/discount-codes-latest', 'calendar picker at /dashboard/discount-codes'] },
+    ],
+  },
+
+  'Delay Dashboard': {
+    stack: 'Cowork task · Google Sheets gviz CSV · HTML data-array edit · Supabase · Next.js',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['nutriobox-weekly-delay-dashboard, cron 0 6 * * 3 (Wed 6 AM)'],
+        edge: '' },
+      { stage: 'READ — Google Sheet (gviz)',
+        detail: ['Sheet 1oNCCGX…G0qpc, gid=1322718967', 'gviz/tq?tqx=out:csv (auth via local Chrome, satvik@)', 'cols T/U/V/W for 10 outlets; mandatory tab-existence check'],
+        edge: '' },
+      { stage: 'BUILD — edit HTML data arrays',
+        detail: ['append week to const weeks / const data', 'two copies (NutrioBox_Reports + Application), md5-identical'],
+        edge: '' },
+      { stage: 'PUBLISH — Supabase',
+        detail: ['POST reports/delay-dashboard.html (plain text, NO gzip — ~18KB)'],
+        edge: '' },
+      { stage: 'SERVE — Next.js',
+        detail: ['/api/delay-dashboard (≈60s cache) → /dashboard/delay'] },
+    ],
+  },
+
+  'Customer Feedback': {
+    stack: 'Next.js route (no job)',
+    nodes: [
+      { stage: 'STATIC / INTERNAL PAGE',
+        detail: ['Next.js route /dashboard/feedback', 'No scheduled job, no external fetch'] },
+    ],
+  },
+
+  'Ratings': {
+    stack: 'Cowork task · headless Chrome scrape · Supabase JSON · Next.js API',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['nutriobox-ratings-weekly-refresh, cron 0 8 * * 1 (Mon)'],
+        edge: '' },
+      { stage: 'SCRAPE — browser (per outlet ×10)',
+        detail: ['Google knowledge-panel aria-label', 'Zomato JSON-LD aggregateRating; Swiggy dineout/delivery', 'baseline = current ratings.json (keep prior on null)'],
+        edge: '' },
+      { stage: 'UPLOAD — Supabase (curl x-upsert)',
+        detail: ['reports/ratings.json (current) + reports/ratings-history.json (ISO week)'],
+        edge: '' },
+      { stage: 'SERVE — Next.js',
+        detail: ['/api/ratings (≈60s edge cache) → /dashboard/ratings', 'data-only: no git deploy needed'] },
+    ],
+  },
+
+  'Music Monitor': {
+    stack: 'Next.js route (live view)',
+    nodes: [
+      { stage: 'LIVE PAGE — Next.js',
+        detail: ['/dashboard/music', 'No scheduled job — reflects live device state for 9 outlets'] },
+    ],
+  },
+
+  'Vehicle Monitoring Dashboard': {
+    stack: 'Next.js route · OneLap GPS · static HTML deploy',
+    nodes: [
+      { stage: 'LIVE PAGE — Next.js',
+        detail: ['/dashboard/vehicle-monitoring', 'OneLap GPS feed; page HTML updated via DEPLOY-vehicle-monitoring.bat (git push → Vercel)'] },
+    ],
+  },
+
+  'Daily Dashboard': {
+    stack: 'Cowork task · Petpooja DOM · Google Sheets · DashboardNav gid map',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['petpooja-sales-to-gsheet, cron 30 10 * * * (10:30 IST)', 'targets the Windows Chrome deviceId (not macOS)'],
+        edge: '' },
+      { stage: 'READ — Petpooja dashboard (DOM)',
+        detail: ['billing.petpooja.com/users/dashboard; jQuery daterangepicker → yesterday, List view', 'per-outlet <tr>/<td>; online-sales kebab tooltip → Zomato/Swiggy'],
+        edge: '' },
+      { stage: 'WRITE — Google Sheet',
+        detail: ['Sheet 1r9u4DMs…vqs, weekday tab (DAY_GIDS)', 'B–K=10 outlets; L=SUM, N=round(NetSales), O=N/L, S=(L*0.95)/R, U=100−T'],
+        edge: '' },
+      { stage: 'SERVE — DashboardNav',
+        detail: ['buildDailyUrl(): gid by IST weekday → opens Google Sheet'] },
+    ],
+  },
+
+  'Weekly Dashboard': {
+    stack: 'Cowork tasks (×3) · Petpooja/Zomato/Swiggy reports · openpyxl · Apps Script · DashboardNav',
+    nodes: [
+      { stage: 'TRIGGERS — Cowork tasks',
+        detail: ['weekly-petpooja-sales-report: cron 0 3 * * 3 (Wed 3 AM)', 'petpooja-weekly-sales-sync: 30 12 * * 1', 'weekly-petpooja-dining-delivery-update: 0 8 * * 1'],
+        edge: '' },
+      { stage: 'SOURCES → SHEET COLUMNS',
+        detail: ['PetPooja Sub-Order Wise → D–S', 'PetPooja KOT delivery-time → T–W', 'Zomato funnel → X–AH; Swiggy business-metrics xlsx (openpyxl) → AI–AR', 'Weekly KOT sheet → AS–AU'],
+        edge: '' },
+      { stage: 'WRITE — Apps Script',
+        detail: ['Sheet 1oNCCGX…G0qpc, week tab, rows 5–23', 'single run() with self-verifying read-back (throws on blank)', 'Sale = My Amount − Discount + Container Charge'],
+        edge: '' },
+      { stage: 'SERVE — DashboardNav',
+        detail: ['WEEKLY_GIDS map → opens last week tab'] },
+    ],
+  },
+
+  'Daily KOT Comparison': {
+    stack: 'Cowork task · Petpooja HTTP · Google Sheets · Supabase pointer JSON · DashboardNav runtime fetch',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['daily-kot-comparison, cron 0 5 * * * (5:10 IST); ≤80 tool calls'],
+        edge: '' },
+      { stage: 'READ — Petpooja',
+        detail: ['KOT: items/kot_list, order_type[2,3] → "Showing 1..of N records"', 'Captain: custom_reports/view_report/27 → Total "No of Kots"', '9 outlets (config.KOT_OUTLETS)'],
+        edge: '' },
+      { stage: 'WRITE — Google Sheets',
+        detail: ['SOURCE 1yOYpZBj…mn8: new "Dth Mmmm" tab, B2:B10 / C2:C10', 'DEST Sales Data 1r9u4DMs… "Daily KOT Comparsion" tab (mirror block)'],
+        edge: '' },
+      { stage: 'POINTER — Supabase',
+        detail: ['PUT reports/kot-latest.json {sheetId,gid,tabName,date}', 'newest tab = leftmost (index 0)'],
+        edge: '' },
+      { stage: 'SERVE — DashboardNav',
+        detail: ['useKotHref() fetches kot-latest.json at runtime → opens that gid', 'falls back to bare sheet URL on fetch failure'] },
+    ],
+  },
+
+  'Weekly KOT Comparison': {
+    stack: 'Cowork task · Petpooja HTTP · Google Sheets · Supabase pointer JSON · DashboardNav',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['kot-comparsion, cron 0 11 * * 1 (Mon ~11:06)'],
+        edge: '' },
+      { stage: 'READ — Petpooja (9 outlets)',
+        detail: ['KOT items/kot_list order_type[2,3]; Captain view_report/27', 'window [Mon 13:00 → Mon 13:00)'],
+        edge: '' },
+      { stage: 'WRITE — Google Sheet',
+        detail: ['Sheet 1eFBNV1b…QX30: duplicate newest tab → rename week → B/C', 'no native XHR/fetch patching; in-page jQuery submit'],
+        edge: '' },
+      { stage: 'POINTER + SERVE',
+        detail: ['PUT reports/kot-weekly-latest.json', 'useWeeklyKotHref() resolves gid at runtime'] },
+    ],
+  },
+
+  'Monthly KOT Comparison': {
+    stack: 'Cowork task · Petpooja HTTP · Google Sheets · DashboardNav',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['monthly-kot-comparison, cron 0 11 1 * * (1st, 11:00)'],
+        edge: '' },
+      { stage: 'READ — Petpooja (9 outlets)',
+        detail: ['KOT items/kot_list order_type[2,3]; Captain view_report/27', 'window [1st→1st) of the ended month'],
+        edge: '' },
+      { stage: 'WRITE — Google Sheet',
+        detail: ['Sheet 1TFCNxjX…Nofw: "<Month Year>" tab, B/C (idempotent)'],
+        edge: '' },
+      { stage: 'SERVE — DashboardNav',
+        detail: ['useMonthlyKotHref() → latest month tab'] },
+    ],
+  },
+
+  'Momos Weekly Performance': {
+    stack: 'Cowork task · Petpooja CSV · Higgsfield app (git) · self-hosted static HTML',
+    nodes: [
+      { stage: 'TRIGGER — Cowork task',
+        detail: ['nutriobox-momos-dashboard--weekly-update-higgsfield, cron 45 5 * * 1'],
+        edge: '' },
+      { stage: 'SOURCE — Petpooja CSV',
+        detail: ['Order Summary Item (10 outlets)', 'filter 6 Whole Wheat Momos SKUs; veg rule: startsWith("Chicken") ⇒ Nonveg', 'aggregate sales/units/orders/AOV per outlet + variant'],
+        edge: '' },
+      { stage: 'BUILD — Higgsfield app',
+        detail: ['website_id a046de25-1608-…; edit app/src/routes/index.tsx const D', 'append 1 week to weekLabels/weekSpans/weekly + cumulative KPIs'],
+        edge: '' },
+      { stage: 'DEPLOY + SERVE',
+        detail: ['website_repo_access clone → git push → deploy_website', 'ops card serves self-hosted /nutriobox-momos-dashboard.html (DEPLOY-momos.bat)'] },
+    ],
+  },
+};
+
 /* ── Card data ── */
 
 type CardDef =
@@ -656,7 +885,10 @@ function WorkflowModal({
   onClose: () => void;
 }) {
   const flow = FLOWS[label];
+  const tech = TECH[label];
+  const [view, setView] = useState<'overview' | 'tech'>('overview');
   if (!flow) return null;
+  const nodes = view === 'tech' && tech ? tech.nodes : flow.nodes;
 
   return (
     <div
@@ -705,13 +937,43 @@ function WorkflowModal({
           </button>
         </div>
 
+        {/* View toggle: manager overview vs developer architecture */}
+        <div className="px-6 pt-4">
+          <div className="inline-flex gap-0.5 p-0.5 bg-slate-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setView('overview')}
+              className={`px-3 py-1 rounded-md text-[12.5px] font-medium transition-colors ${
+                view === 'overview' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('tech')}
+              disabled={!tech}
+              className={`px-3 py-1 rounded-md text-[12.5px] font-medium transition-colors ${
+                view === 'tech' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              } ${!tech ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              Technical
+            </button>
+          </div>
+          {view === 'tech' && tech?.stack && (
+            <div className="mt-2 text-[11.5px] text-slate-500">
+              <span className="font-medium text-slate-600">Stack:</span> {tech.stack}
+            </div>
+          )}
+        </div>
+
         {/* Flowchart */}
-        <div className="px-6 py-6">
+        <div className="px-6 pt-3 pb-6">
           <div className="flex flex-col items-stretch">
-            {flow.nodes.map((n, i) => {
+            {nodes.map((n, i) => {
               const branches = n.branches ?? [];
               const detail = n.detail ?? [];
-              const isLast = i === flow.nodes.length - 1;
+              const isLast = i === nodes.length - 1;
               return (
                 <div key={i} className="flex flex-col items-stretch">
                   {/* box */}

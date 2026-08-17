@@ -175,6 +175,14 @@ function ClockIcon() {
   );
 }
 
+function DownArrow() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
+  );
+}
+
 /* ── URL builders (same logic as DashboardNav) ── */
 
 const DAILY_SHEET_ID = '1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs';
@@ -218,16 +226,22 @@ const KOT_MONTHLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_M
 
 const MOMOS_DASHBOARD_URL = '/nutriobox-momos-dashboard.html';
 
-/* ── Workflow steps — plain-English, step-by-step SOP for each tile.
-   Written so someone new can follow the whole data flow and reproduce it. */
+/* ── Workflow algorithm diagrams (built from each tile's Claude scheduled task).
+   Rendered as a top-to-bottom flowchart: each box is a stage with detail lines
+   and optional ├── branches, joined by a labelled ▼ arrow to the next box. */
 
-type Step = { title: string; body: string; bullets?: string[] };
+type FlowNode = {
+  stage: string;
+  detail?: string[];
+  branches?: string[];
+  edge?: string;
+};
+
 type Flow = {
   automated: boolean;
   tasks: string[];
   schedule: string;
-  intro: string;
-  steps: Step[];
+  nodes: FlowNode[];
 };
 
 const FLOWS: Record<string, Flow> = {
@@ -235,65 +249,31 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['nutriobox-daily-data-v2 (Playwright automation)'],
     schedule: 'Every day at 4:00 AM & 4:00 PM IST',
-    intro:
-      'This dashboard shows product-level sales for all 10 NutrioBox outlets. It refreshes on its own twice a day: it pulls the raw order data from Petpooja (our billing/POS system), cleans it, and publishes it to the website. Nobody has to touch it.',
-    steps: [
-      {
-        title: '1. The job starts automatically',
-        body:
-          'The office laptop runs a scheduled job at 4:00 AM and again at 4:00 PM (India time). The 4 AM run collects yesterday’s full day of sales; the 4 PM run collects today so far (roughly 8 AM to 4 PM) so the dashboard shows the day as it unfolds.',
-        bullets: [
-          'Windows Task Scheduler tasks: NutrioBox-DailyData-AM (4:00) and NutrioBox-DailyData-PM (16:00).',
-          'It first re-logs into Petpooja so the data pull is authenticated (uses a saved login session).',
-        ],
-      },
-      {
-        title: '2. Download the raw orders from Petpooja',
-        body:
-          'A background Chrome browser opens Petpooja and exports the “Order Summary Item” report as a CSV file covering all 10 outlets for that day. It exports the file twice, about 3 minutes apart, and keeps the larger one — because some Zomato/Swiggy orders take a few minutes to appear, and we don’t want to miss them.',
-        bullets: [
-          'Where: billing.petpooja.com → Reports → Order Summary Item.',
-          'Why twice: catches late-syncing online orders (a known gap that once cost ~₹900/day).',
-        ],
-      },
-      {
-        title: '3. Clean the data — one row per bill',
-        body:
-          'A single bill can have many item lines, so the totals would be over-counted if we left it as-is. We keep just one row per bill using the pair (outlet + invoice number) — exactly like using “Remove Duplicates on invoice number” in Excel. We keep Success and Cancelled bills; only Success bills count toward sales (Cancelled show as ₹0).',
-        bullets: [
-          'A full day is normally ~1,500–2,000 bills; a half-day (4 PM run) ~450–700.',
-          'To reproduce in Excel: filter the CSV to the date, Remove Duplicates on invoice_no, sum the total column for Success rows.',
-        ],
-      },
-      {
-        title: '4. Add the add-on sales, outlet by outlet',
-        body:
-          'For each of the 10 outlets, the browser opens Petpooja’s “Addon: Item-Wise” report and reads how many add-ons were sold and their value. Each outlet’s figures are cross-checked against the report’s own “Total” row, so if a number is wrong the job stops rather than publishing bad data.',
-        bullets: [
-          'Outlets: DLF Phase 2, Rajinder Nagar, Dwarka, Janakpuri, Karkardooma, Noida, Prashant Vihar, Sector 15 Gurugram, Shivalik, Sector 63 Noida.',
-          'Add-ons are stored separately so the dashboard can show them on their own.',
-        ],
-      },
-      {
-        title: '5. Safety cross-check (morning run only)',
-        body:
-          'On the 4 AM run, the day’s total sales from our export are compared with the grand total shown on Petpooja’s own dashboard. If our number is short by more than ₹200 (because some online orders settled late), it re-exports once to pick them up. This makes sure our number matches what management sees in Petpooja.',
-      },
-      {
-        title: '6. Rebuild the dashboard’s data',
-        body:
-          'The cleaned bills and add-ons for the day are written into the dashboard’s data file. Any old rows for the same day are removed first, so re-running never creates duplicates. A safety check confirms the previous day’s total is completely unchanged — if it isn’t, the job aborts and publishes nothing.',
-      },
-      {
-        title: '7. Publish to the website',
-        body:
-          'The rebuilt dashboard (about 100 MB) is compressed and uploaded to our storage (Supabase). The upload is then re-downloaded and its checksum compared, so we are certain the live website received exactly the right file.',
-      },
-      {
-        title: '8. Live on the site',
-        body:
-          'operationsdashboard.nutriobox.com now shows the refreshed Sales Item Dashboard. It is reviewed around 10 AM (for the morning run) and in the evening (for the afternoon run).',
-      },
+    nodes: [
+      { stage: 'WINDOWS TASK SCHEDULER (office laptop)',
+        detail: ['Runs automatically twice a day.', '4:00 AM → yesterday, full day', '4:00 PM → today so far (8 AM–4 PM)'],
+        edge: 'first re-logs into Petpooja (saved session)' },
+      { stage: 'DOWNLOAD ORDERS FROM PETPOOJA',
+        detail: ['Background Chrome opens the “Order Summary Item” report', 'Exports a CSV for all 10 outlets', 'Exports twice (~3 min apart) and keeps the larger file'],
+        edge: 'twice = catch late Zomato/Swiggy orders' },
+      { stage: 'CLEAN → ONE ROW PER BILL',
+        detail: ['Keep one row per (outlet + invoice no) — like Excel “Remove Duplicates”', 'Keep Success + Cancelled; only Success counts as sales', 'Full day ≈ 1,500–2,000 bills; half day ≈ 450–700'],
+        edge: '' },
+      { stage: 'ADD-ON SALES — “Addon: Item-Wise” report',
+        detail: ['Opens the add-on report for each outlet and reads qty + value', 'Each outlet is verified against the report’s own Total row'],
+        branches: ['DLF Phase 2 · Rajinder Nagar', 'Dwarka · Janakpuri · Karkardooma', 'Noida · Prashant Vihar · Shivalik', 'Sector 15 Gurugram · Sector 63 Noida'],
+        edge: '' },
+      { stage: 'MORNING CROSS-CHECK (4 AM run only)',
+        detail: ['Compare our day total vs Petpooja’s own dashboard total', 'Re-export once if we are short by more than ₹200'],
+        edge: '' },
+      { stage: 'REBUILD DASHBOARD DATA',
+        detail: ['Write the day’s bills + add-ons into the data file', 'Remove old rows for the same day first (no duplicates)', 'Safety: previous day’s total must be unchanged, or STOP'],
+        edge: '' },
+      { stage: 'PUBLISH TO WEBSITE',
+        detail: ['Compress (~100 MB → ~8 MB) and upload to storage (Supabase)', 'Re-download and compare a checksum to confirm the right file'],
+        edge: '' },
+      { stage: 'LIVE — operationsdashboard.nutriobox.com',
+        detail: ['Reviewed ~10 AM (morning run) and evening (afternoon run)'] },
     ],
   },
 
@@ -301,54 +281,32 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['daily-offer-tracker', 'nutriobox-discount-report-daily-upload'],
     schedule: 'Every day — report ~4:09 AM, site upload ~5:00 AM IST',
-    intro:
-      'This tracks which promotional offers / discount codes are live on Zomato and Swiggy for all 10 outlets, every day. It emails a report to management and also feeds the calendar view on this tile. Rule: it may only ever show today’s freshly-collected data — never yesterday’s.',
-    steps: [
-      {
-        title: '1. The daily job starts (~4:09 AM)',
-        body:
-          'A scheduled job wakes up and prepares to collect the current day’s active offers. It clears any old data first so nothing stale can leak into today’s report.',
-      },
-      {
-        title: '2. Read Zomato offers for all 10 outlets',
-        body:
-          'It calls Zomato’s partner “track-offers” service for each of the 10 restaurant IDs and lists every active offer, removing duplicates. Offers are split into two groups: “Standard” (codes NutrioBox itself configures) and “Extra” (added by Zomato).',
-        bullets: [
-          'Standard examples: flat ₹175 off above ₹449; flat ₹200 off above ₹999; 20% off above ₹800.',
-          'Anything not in the Standard list is automatically “Extra”.',
-        ],
-      },
-      {
-        title: '3. Read Swiggy offers for all 10 outlets',
-        body:
-          'It makes one request to Swiggy’s data service that returns the active discount codes for all outlets at once, again split into Standard vs Extra.',
-        bullets: ['Standard Swiggy codes: SAVEBITE, FREEDISH / BUY2GET1, PARTY, FLAT200, FLASHDEAL.'],
-      },
-      {
-        title: '4. If Swiggy fails, retry — never send wrong data',
-        body:
-          'If Swiggy doesn’t respond cleanly, the job tries again after 5 minutes, then 10, then 15. If all four attempts fail, it sends a short “could not complete today” alert instead of a half-finished report. A late-but-correct report is preferred over a fast-but-wrong one.',
-      },
-      {
-        title: '5. Build the report table',
-        body:
-          'It assembles an HTML table with one row per code, showing on how many of the 10 outlets that code is active (an n/10 count) and which outlets. Automatic quality checks run — for example, exactly 10 outlets must be present and the expected number of Standard rows must appear — or it will not send.',
-      },
-      {
-        title: '6. Email the report',
-        body:
-          'The finished report is emailed to mayank@nutriobox.com through a Google Apps Script, which keeps the table formatting intact (normal email compose would break it).',
-      },
-      {
-        title: '7. Publish to the dashboard (~5:00 AM)',
-        body:
-          'A second scheduled job fetches that email, wraps its contents in the site’s styling, and uploads it to storage as discount-codes-<date>.html so the tile can display it.',
-      },
-      {
-        title: '8. Live on the tile',
-        body:
-          'The Discount Codes card shows a calendar. Picking any date opens that day’s saved offer report.',
-      },
+    nodes: [
+      { stage: 'DAILY JOB STARTS (~4:09 AM)',
+        detail: ['Clears yesterday’s data first', 'Rule: only today’s freshly-collected data may be sent'],
+        edge: '' },
+      { stage: 'ZOMATO OFFERS — all 10 outlets',
+        detail: ['Calls Zomato’s partner “track-offers” for each restaurant ID', 'De-duplicates, then splits Standard vs Extra'],
+        branches: ['Standard: ₹175/₹449 · ₹200/₹999 · 20%/₹800', 'Extra: everything else Zomato added'],
+        edge: '' },
+      { stage: 'SWIGGY OFFERS — all 10 outlets',
+        detail: ['One request returns every outlet’s active codes at once', 'Splits Standard vs Extra'],
+        branches: ['Standard: SAVEBITE · FREEDISH/BUY2GET1 · PARTY · FLAT200 · FLASHDEAL'],
+        edge: 'if Swiggy fails →' },
+      { stage: 'RETRY IF SWIGGY FAILS',
+        detail: ['Retries after 5, then 10, then 15 minutes', 'If all 4 attempts fail → send a short “could not complete” alert', 'Never sends partial or stale data'],
+        edge: 'on success →' },
+      { stage: 'BUILD THE REPORT TABLE',
+        detail: ['One row per code, with an n/10 outlet-coverage count', 'Quality checks: exactly 10 outlets, expected number of Standard rows'],
+        edge: '' },
+      { stage: 'EMAIL THE REPORT',
+        detail: ['Sent to mayank@nutriobox.com via a Google Apps Script', 'Apps Script keeps the table formatting intact'],
+        edge: '' },
+      { stage: 'UPLOAD TO THE SITE (~5:00 AM)',
+        detail: ['A second job fetches that email', 'Wraps it in site styling → discount-codes-<date>.html on Supabase'],
+        edge: '' },
+      { stage: 'LIVE — Discount Codes tile',
+        detail: ['Calendar view: pick any date to open that day’s report'] },
     ],
   },
 
@@ -356,34 +314,21 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['nutriobox-weekly-delay-dashboard'],
     schedule: 'Every Wednesday at 6:00 AM IST',
-    intro:
-      'This shows delivery-delay performance per outlet, one week at a time. Once a week it reads the latest completed week’s delay numbers from a Google Sheet and republishes the delay page.',
-    steps: [
-      {
-        title: '1. The weekly job starts (Wednesday 6 AM)',
-        body:
-          'It works out the most recently completed Monday–Sunday week and the exact tab name for that week in the delay tracking Google Sheet.',
-      },
-      {
-        title: '2. Read the delay numbers from the sheet',
-        body:
-          'It confirms that week’s tab actually exists (a required safety check), then reads the delay columns for all 10 outlets from that tab.',
-      },
-      {
-        title: '3. Add the week to the dashboard file',
-        body:
-          'The new week’s numbers are appended to the delay dashboard’s data. Two identical copies of the file are kept in sync, and a checksum confirms they match before anything is published.',
-      },
-      {
-        title: '4. Publish to the website',
-        body:
-          'The updated delay dashboard (a small file, uploaded uncompressed) is sent to storage. The live page picks it up within about a minute.',
-      },
-      {
-        title: '5. Live on the site',
-        body:
-          'operationsdashboard.nutriobox.com/dashboard/delay now shows the new week alongside the earlier weeks.',
-      },
+    nodes: [
+      { stage: 'WEEKLY JOB STARTS (Wed 6 AM)',
+        detail: ['Works out the last completed Mon–Sun week and its sheet tab name'],
+        edge: '' },
+      { stage: 'READ THE DELAY GOOGLE SHEET',
+        detail: ['Confirms that week’s tab actually exists (mandatory check)', 'Reads the delay columns (T / U / V / W) for all 10 outlets'],
+        edge: '' },
+      { stage: 'APPEND THE WEEK',
+        detail: ['Adds the new week to the delay dashboard file', 'Two identical copies kept in sync (checksum must match)'],
+        edge: '' },
+      { stage: 'PUBLISH',
+        detail: ['Uploads to storage (small file, no compression)'],
+        edge: '' },
+      { stage: 'LIVE — /dashboard/delay',
+        detail: ['New week appears within about a minute'] },
     ],
   },
 
@@ -391,19 +336,12 @@ const FLOWS: Record<string, Flow> = {
     automated: false,
     tasks: [],
     schedule: 'Internal page (no scheduled data job)',
-    intro:
-      'This is an internal page inside the Operations Dashboard app. There is no automated data pull behind it — the app serves the feedback and satisfaction content itself.',
-    steps: [
-      {
-        title: '1. Served by the app',
-        body:
-          'Unlike the sales and KOT tiles, no scheduled job feeds this card. The page is part of the website and shows customer-feedback and satisfaction insights across outlets directly.',
-      },
-      {
-        title: '2. Open the tile to view',
-        body:
-          'Clicking the card opens the internal feedback page. If you later want this to pull from a live source on a schedule, that automation would be added separately.',
-      },
+    nodes: [
+      { stage: 'INTERNAL PAGE',
+        detail: ['No scheduled data job feeds this tile', 'The content is served by the website itself'],
+        edge: '' },
+      { stage: 'CUSTOMER FEEDBACK TILE',
+        detail: ['Feedback and satisfaction insights across outlets'] },
     ],
   },
 
@@ -411,29 +349,19 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['nutriobox-ratings-weekly-refresh'],
     schedule: 'Every Monday at ~8:07 AM IST',
-    intro:
-      'This refreshes each outlet’s star ratings and review counts on Zomato, Swiggy and Google, once a week, and publishes them to the Ratings tile with a trend over time.',
-    steps: [
-      {
-        title: '1. The weekly job starts (Monday morning)',
-        body:
-          'It first loads the currently published ratings as a baseline. If any single source fails to load later, that outlet keeps its previous value — good data is never overwritten with a blank.',
-      },
-      {
-        title: '2. Read ratings for each outlet on all 3 platforms',
-        body:
-          'For each of the 10 outlets, a browser reads the rating and review count from Google (the business panel), Zomato (the outlet page) and Swiggy (dine-out or delivery page).',
-      },
-      {
-        title: '3. Save the ratings and the history',
-        body:
-          'It writes a ratings file (current values for all 10 outlets) and appends this week’s figures to a history file so the tile can draw a week-over-week trend chart.',
-      },
-      {
-        title: '4. Live on the tile',
-        body:
-          'The Ratings card compares platforms per outlet and highlights which locations need attention. No website re-deploy is needed — the tile reads the saved files directly.',
-      },
+    nodes: [
+      { stage: 'WEEKLY JOB STARTS (Mon 8:07 AM)',
+        detail: ['Loads the current ratings as a baseline', 'If a source fails later, that outlet keeps its previous value (never blanked)'],
+        edge: '' },
+      { stage: 'READ 3 PLATFORMS PER OUTLET (×10)',
+        detail: ['For each outlet, read the star rating + review count'],
+        branches: ['Google — business panel', 'Zomato — outlet page', 'Swiggy — dine-out / delivery page'],
+        edge: '' },
+      { stage: 'SAVE RATINGS + HISTORY',
+        detail: ['Writes ratings.json (current values)', 'Appends this week to a history file for the trend chart'],
+        edge: '' },
+      { stage: 'LIVE — Ratings tile',
+        detail: ['Compare platforms per outlet; spot ones needing attention', 'No site re-deploy — the tile reads the files directly'] },
     ],
   },
 
@@ -441,18 +369,12 @@ const FLOWS: Record<string, Flow> = {
     automated: false,
     tasks: [],
     schedule: 'Live monitor (no scheduled data job)',
-    intro:
-      'This is a live view of what music is playing at each outlet right now. It reflects real-time device status rather than a once-a-day data pull.',
-    steps: [
-      {
-        title: '1. Live device status',
-        body:
-          'For all 9 outlets it shows whether background music is playing on Bluetooth, on a laptop speaker, or not playing at all — broken down hour by hour.',
-      },
-      {
-        title: '2. Open the tile to view',
-        body: 'There is no scheduled job here; the card reflects the current state whenever you open it.',
-      },
+    nodes: [
+      { stage: 'LIVE MONITOR',
+        detail: ['No scheduled job — reflects real-time device state', 'All 9 outlets, broken down hour by hour'],
+        edge: '' },
+      { stage: 'MUSIC MONITOR TILE',
+        detail: ['Shows Bluetooth / laptop speaker / not playing'] },
     ],
   },
 
@@ -460,18 +382,12 @@ const FLOWS: Record<string, Flow> = {
     automated: false,
     tasks: [],
     schedule: 'Live GPS feed (no scheduled data job)',
-    intro:
-      'This tracks the delivery fleet live using the OneLap GPS feed. It updates in real time from GPS, so there is no daily or weekly job behind it.',
-    steps: [
-      {
-        title: '1. Live GPS feed',
-        body:
-          'Each vehicle’s route, outlet stops, drive-vs-halt times and a full trip log per leg come straight from OneLap GPS in real time.',
-      },
-      {
-        title: '2. Open the tile to view',
-        body: 'The card shows the current fleet position and history whenever you open it — nothing is scheduled.',
-      },
+    nodes: [
+      { stage: 'ONELAP GPS FEED (live)',
+        detail: ['No scheduled job — updates in real time from GPS'],
+        edge: '' },
+      { stage: 'VEHICLE MONITORING TILE',
+        detail: ['Route, outlet stops, drive-vs-halt times, full trip log per leg'] },
     ],
   },
 
@@ -479,80 +395,47 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['petpooja-sales-to-gsheet'],
     schedule: 'Every day at ~10:30 AM IST',
-    intro:
-      'This fills yesterday’s key sales numbers per outlet into the “Sales Data” Google Sheet. Opening the tile opens that sheet on the correct day’s tab.',
-    steps: [
-      {
-        title: '1. The daily job starts (~10:30 AM)',
-        body:
-          'It works out yesterday’s date, which day-of-week tab to write to (Mon–Sun), and which row inside that tab is for yesterday’s date.',
-      },
-      {
-        title: '2. Read yesterday’s sales from Petpooja',
-        body:
-          'It opens Petpooja’s POS dashboard, sets the date to yesterday, and reads the summary cards, the per-outlet sales table, and the Zomato/Swiggy split from the online-sales breakdown.',
-      },
-      {
-        title: '3. Fill the Google Sheet',
-        body:
-          'It writes each outlet’s numbers into the day’s row (columns B–K are the 10 outlets), plus the total, net sales, percentage and average-order-value formulas (columns L, N, O, S, U). One screenshot is taken to verify the row looks right.',
-        bullets: [
-          'The 10 outlet totals must add up to the overall Total Sales as a check.',
-          'Sheet: “Sales Data” — the tab named for yesterday’s weekday.',
-        ],
-      },
-      {
-        title: '4. Open from the tile',
-        body: 'The Daily Dashboard card links straight to that day’s tab in the Google Sheet.',
-      },
+    nodes: [
+      { stage: 'DAILY JOB STARTS (~10:30 AM)',
+        detail: ['Works out yesterday’s date, the weekday tab, and the target row'],
+        edge: '' },
+      { stage: 'READ PETPOOJA POS (yesterday)',
+        detail: ['Reads the summary cards and per-outlet sales table', 'Opens the online-sales tooltip for the Zomato / Swiggy split'],
+        edge: '' },
+      { stage: 'FILL THE “SALES DATA” SHEET',
+        detail: ['Writes into the day-of-week tab, yesterday’s row'],
+        branches: ['B–K = the 10 outlet totals', 'L = SUM · N = Net Sales', 'O / S / U = % and average-order-value formulas'],
+        edge: 'check: 10 outlet totals must equal overall Total Sales' },
+      { stage: 'LIVE — opens the Google Sheet',
+        detail: ['The Daily Dashboard card links to that day’s tab'] },
     ],
   },
 
   'Weekly Dashboard': {
     automated: true,
-    tasks: [
-      'weekly-petpooja-sales-report',
-      'petpooja-weekly-sales-sync',
-      'weekly-petpooja-dining-delivery-update',
-    ],
+    tasks: ['weekly-petpooja-sales-report', 'petpooja-weekly-sales-sync', 'weekly-petpooja-dining-delivery-update'],
     schedule: 'Wednesday 3:00 AM (main) + Monday jobs',
-    intro:
-      'This builds the full weekly sales picture in the “Weekly Sales” Google Sheet by combining data from Petpooja, Zomato and Swiggy for the last completed Monday–Sunday week. A few jobs fill different parts of the same sheet.',
-    steps: [
-      {
-        title: '1. Main weekly entry starts (Wednesday 3 AM)',
-        body:
-          'It finds the last complete Monday–Sunday week, opens (or creates) that week’s tab, and clears the area it is about to fill so old numbers can’t linger.',
-      },
-      {
-        title: '2. Pull orders & sales from Petpooja',
-        body:
-          'From Petpooja’s “Sub-Order Wise” report it fills the order counts, sales, and the dine-in vs online split, including the Zomato/Swiggy breakdown (columns D–S).',
-      },
-      {
-        title: '3. Pull delivery-time (delay) data',
-        body:
-          'From Petpooja’s KOT delivery-time analysis it fills how many orders were delivered in 15–25 minutes and 26+ minutes, per outlet (columns T–W).',
-      },
-      {
-        title: '4. Pull funnel data from Zomato & Swiggy',
-        body:
-          'It adds Zomato’s business funnel (impressions → menu → cart → orders, columns X–AH) and Swiggy’s business metrics from their downloaded report (columns AI–AR).',
-      },
-      {
-        title: '5. Add Captain-App KOT and verify',
-        body:
-          'It brings the Captain-App KOT counts from the Weekly KOT sheet (columns AS–AU), then reads every cell back to confirm nothing was left blank — checking the sheet itself, not just the run log.',
-      },
-      {
-        title: '6. Two smaller Monday jobs top it up',
-        body:
-          'On Monday, one job writes each outlet’s total sales from Petpooja’s All-Restaurant report, and another fills the month-to-date dining vs delivery percentages into the “Dining/Delivery” tab.',
-      },
-      {
-        title: '7. Open from the tile',
-        body: 'The Weekly Dashboard card opens last week’s tab in the Google Sheet.',
-      },
+    nodes: [
+      { stage: 'MAIN WEEKLY JOB (Wed 3 AM)',
+        detail: ['Finds the last complete Mon–Sun week', 'Opens/creates its tab and clears the area it will fill'],
+        edge: '' },
+      { stage: 'PETPOOJA — SUB-ORDER WISE REPORT',
+        detail: ['Order counts, sales, dine-in vs online, Zomato/Swiggy split'],
+        edge: '→ columns D–S' },
+      { stage: 'PETPOOJA — KOT DELIVERY-TIME',
+        detail: ['Orders delivered in 15–25 min and 26+ min, per outlet'],
+        edge: '→ columns T–W' },
+      { stage: 'ZOMATO + SWIGGY FUNNELS',
+        detail: ['Zomato funnel: impressions → menu → cart → orders', 'Swiggy business metrics from its downloaded report'],
+        edge: '→ X–AH · AI–AR' },
+      { stage: 'CAPTAIN-APP KOT + VERIFY',
+        detail: ['Brings Captain-App KOT from the Weekly KOT sheet', 'Reads every cell back — stops if any is left blank'],
+        edge: '→ AS–AU' },
+      { stage: 'MONDAY TOP-UP JOBS',
+        detail: ['Mon 12:30 — total sales per outlet', 'Mon 08:00 — dining vs delivery %'],
+        edge: '' },
+      { stage: 'LIVE — opens the Google Sheet',
+        detail: ['The Weekly Dashboard card opens last week’s tab'] },
     ],
   },
 
@@ -560,37 +443,24 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['daily-kot-comparison'],
     schedule: 'Every day at 5:10 AM IST',
-    intro:
-      'KOT means “Kitchen Order Ticket” — a ticket printed for each order. This compares the total KOTs (dine-in + pickup) against the KOTs raised through the Captain App, per outlet, for yesterday. It fills a Google Sheet and the tile always opens the newest day’s tab.',
-    steps: [
-      {
-        title: '1. The daily job starts (5:10 AM)',
-        body: 'It works out yesterday’s date and prepares to create a new tab named for that date.',
-      },
-      {
-        title: '2. Count total KOTs from Petpooja',
-        body:
-          'On Petpooja’s KOT list it filters to Dine-In + Pickup order types for yesterday and reads the total KOT count for each of the 9 KOT outlets. This is column B.',
-      },
-      {
-        title: '3. Count Captain-App KOTs',
-        body:
-          'On Petpooja’s Captain performance report it reads the “No of KOTs” total for each outlet. This is column C. (Column D and the totals are formulas in the sheet.)',
-      },
-      {
-        title: '4. Write a new dated tab, then mirror it',
-        body:
-          'It creates a new tab (e.g. “16th August”) in the Daily KOT source sheet, fills in the numbers, then copies the same block into the “Daily KOT Comparison” tab of the main Sales Data sheet.',
-      },
-      {
-        title: '5. Update the “latest tab” pointer',
-        body:
-          'The tile doesn’t hard-code which tab to open — it reads a small pointer file (kot-latest.json) that records the newest tab. That pointer is updated so the button always opens the freshest day.',
-      },
-      {
-        title: '6. Open from the tile',
-        body: 'The Daily KOT Comparison card opens the latest day’s tab automatically.',
-      },
+    nodes: [
+      { stage: 'DAILY JOB STARTS (5:10 AM)',
+        detail: ['KOT = Kitchen Order Ticket (one per order)', 'Compares total KOTs vs Captain-App KOTs, per outlet', 'Target = yesterday'],
+        edge: '' },
+      { stage: 'COUNT TOTAL KOTs — PETPOOJA',
+        detail: ['KOT list filtered to Dine-In + Pickup for yesterday', 'Reads the count for each of the 9 KOT outlets'],
+        edge: '→ column B' },
+      { stage: 'COUNT CAPTAIN-APP KOTs',
+        detail: ['Captain performance report → the “No of KOTs” total'],
+        edge: '→ column C (col D + totals are formulas)' },
+      { stage: 'WRITE A NEW DATED TAB',
+        detail: ['New tab, e.g. “16th August”, in the source KOT sheet', 'Mirror the same block into the Sales Data “Daily KOT Comparison” tab'],
+        edge: '' },
+      { stage: 'UPDATE THE “LATEST TAB” POINTER',
+        detail: ['The tile reads kot-latest.json to know the newest tab', 'Pointer updated so the button always opens the freshest day'],
+        edge: '' },
+      { stage: 'LIVE — Daily KOT tile',
+        detail: ['Opens the latest day’s tab automatically'] },
     ],
   },
 
@@ -598,28 +468,18 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['kot-comparsion'],
     schedule: 'Every Monday at ~11:06 AM IST',
-    intro:
-      'The weekly version of the KOT comparison: total KOTs vs Captain-App KOTs per outlet, for the last completed Monday–Sunday week. It adds a new week tab and points the tile at it.',
-    steps: [
-      {
-        title: '1. The weekly job starts (Monday)',
-        body: 'It computes the last completed Monday–Sunday week (using a 1 PM–1 PM business-day window).',
-      },
-      {
-        title: '2. Read KOT and Captain counts per outlet',
-        body:
-          'For each of the 9 outlets it reads the total KOT count (Dine-In + Pickup) and the Captain-App KOT count from Petpooja for that week.',
-      },
-      {
-        title: '3. Create the week’s tab and fill it',
-        body:
-          'It duplicates the newest existing tab, renames it to the week range (e.g. “10th August – 16th August”), moves it to the front, and fills the KOT and Captain columns. It never deletes old tabs.',
-      },
-      {
-        title: '4. Update the pointer & open from the tile',
-        body:
-          'The weekly pointer file (kot-weekly-latest.json) is updated to the new tab, so the Weekly KOT Comparison card always opens the latest week.',
-      },
+    nodes: [
+      { stage: 'WEEKLY JOB STARTS (Mon 11:06 AM)',
+        detail: ['Computes the last completed Mon–Sun week (1 PM–1 PM window)'],
+        edge: '' },
+      { stage: 'READ KOT + CAPTAIN (9 outlets)',
+        detail: ['Total KOTs (Dine-In + Pickup) and Captain-App KOTs for the week'],
+        edge: '' },
+      { stage: 'CREATE THE WEEK’S TAB',
+        detail: ['Duplicate the newest tab → rename “10th Aug – 16th Aug” → move to front', 'Fill KOT + Captain columns; old tabs are never deleted'],
+        edge: '' },
+      { stage: 'UPDATE POINTER → LIVE',
+        detail: ['kot-weekly-latest.json points to the new tab', 'Weekly KOT tile opens the latest week'] },
     ],
   },
 
@@ -627,27 +487,18 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['monthly-kot-comparison'],
     schedule: 'On the 1st of each month at ~11:00 AM IST',
-    intro:
-      'The monthly version of the KOT comparison, in a separate sheet: total KOTs vs Captain-App KOTs per outlet, for the calendar month that just ended.',
-    steps: [
-      {
-        title: '1. The monthly job starts (1st of month)',
-        body: 'It works out the previous calendar month and the tab name for it (e.g. “July 2026”).',
-      },
-      {
-        title: '2. Read KOT and Captain counts per outlet',
-        body:
-          'For each of the 9 outlets it reads the month’s total KOT count and Captain-App KOT count from Petpooja.',
-      },
-      {
-        title: '3. Fill the month’s tab (safely re-runnable)',
-        body:
-          'If that month’s tab already exists it fills it in place; otherwise it creates one from a template. Either way, re-running never creates duplicates.',
-      },
-      {
-        title: '4. Open from the tile',
-        body: 'The Monthly KOT Comparison card opens the latest month’s tab.',
-      },
+    nodes: [
+      { stage: 'MONTHLY JOB STARTS (1st, 11:00 AM)',
+        detail: ['Works out the previous calendar month and tab name (e.g. “July 2026”)'],
+        edge: '' },
+      { stage: 'READ KOT + CAPTAIN (9 outlets)',
+        detail: ['The month’s total KOTs and Captain-App KOTs'],
+        edge: '' },
+      { stage: 'FILL THE MONTH TAB (re-runnable)',
+        detail: ['If the month tab exists, fill it; otherwise create from a template', 'Re-running never creates duplicates'],
+        edge: '' },
+      { stage: 'LIVE — Monthly KOT tile',
+        detail: ['Opens the latest month’s tab'] },
     ],
   },
 
@@ -655,32 +506,22 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['nutriobox-momos-dashboard--weekly-update-higgsfield'],
     schedule: 'Every Monday at ~5:45 AM IST',
-    intro:
-      'This tracks momo sales specifically — units, revenue and veg vs non-veg mix across outlets, week by week. It reads Petpooja, computes the momo numbers, and updates a separate hosted dashboard app.',
-    steps: [
-      {
-        title: '1. The weekly job starts (Monday)',
-        body: 'It determines the last completed Monday–Sunday week and its end date.',
-      },
-      {
-        title: '2. Export orders and keep only momos',
-        body:
-          'It exports Petpooja’s Order Summary report for all 10 outlets, drops exact duplicate rows, keeps Success orders, and filters to the 6 “Whole Wheat Momos” products.',
-      },
-      {
-        title: '3. Compute the week’s momo numbers',
-        body:
-          'It classifies each item as veg or non-veg and by variant (Steamed / Tandoori / Chilli), then computes sales, units sold, orders and average order value per outlet.',
-      },
-      {
-        title: '4. Update the Momos dashboard app',
-        body:
-          'It appends exactly one new week to the hosted Momos app’s data, updates the date labels, runs a sanity check (roughly ₹7 lakh expected — it stops if the number looks wrong), then commits and deploys.',
-      },
-      {
-        title: '5. Open from the tile',
-        body: 'The Momos Weekly Performance card links to the live app (nutriobox-momos.higgsfield.app).',
-      },
+    nodes: [
+      { stage: 'WEEKLY JOB STARTS (Mon 5:45 AM)',
+        detail: ['Determines the last completed Mon–Sun week'],
+        edge: '' },
+      { stage: 'EXPORT ORDERS → KEEP ONLY MOMOS',
+        detail: ['Petpooja Order Summary for all 10 outlets', 'Drop duplicates, keep Success, filter the 6 Whole Wheat Momos products'],
+        edge: '' },
+      { stage: 'COMPUTE THE WEEK',
+        detail: ['Sales, units sold, orders and average order value per outlet'],
+        branches: ['Veg vs Non-veg', 'Steamed / Tandoori / Chilli'],
+        edge: '' },
+      { stage: 'UPDATE THE MOMOS APP',
+        detail: ['Append exactly one new week to the hosted app data', 'Sanity check ~₹7 lakh (stops if it looks wrong) → commit → deploy'],
+        edge: '' },
+      { stage: 'LIVE — nutriobox-momos.higgsfield.app',
+        detail: ['The Momos Weekly Performance card links to it'] },
     ],
   },
 };
@@ -803,7 +644,7 @@ const CARDS: CardDef[] = [
   },
 ];
 
-/* ── Workflow modal — light theme, numbered step-by-step timeline ── */
+/* ── Workflow modal — light-theme top-to-bottom flowchart ── */
 
 function WorkflowModal({
   label,
@@ -826,16 +667,16 @@ function WorkflowModal({
       aria-label={`${label} workflow`}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[88vh] overflow-y-auto bg-white rounded-2xl shadow-2xl"
+        className="relative w-full max-w-lg max-h-[88vh] overflow-y-auto bg-white rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`h-1.5 w-full bg-gradient-to-r ${accent} rounded-t-2xl`} />
 
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 px-6 sm:px-8 pt-5 pb-4 bg-white/95 backdrop-blur border-b border-slate-100">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 px-6 pt-5 pb-4 bg-white/95 backdrop-blur border-b border-slate-100">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold text-slate-900">{label}</h2>
+              <h2 className="text-lg font-semibold text-slate-900">{label}</h2>
               <span
                 className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
                   flow.automated
@@ -851,9 +692,7 @@ function WorkflowModal({
               <span>{flow.schedule}</span>
             </div>
             {flow.tasks.length > 0 && (
-              <div className="mt-1 text-[11px] text-slate-400 font-mono">
-                {flow.tasks.join('  ·  ')}
-              </div>
+              <div className="mt-1 text-[11px] text-slate-400 font-mono">{flow.tasks.join('  ·  ')}</div>
             )}
           </div>
           <button
@@ -866,53 +705,52 @@ function WorkflowModal({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 sm:px-8 py-6">
-          {/* Plain-English overview */}
-          <div className="mb-6 rounded-xl bg-slate-50 border border-slate-100 p-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
-              What this tile is
-            </div>
-            <p className="text-[14px] text-slate-700 leading-relaxed">{flow.intro}</p>
-          </div>
-
-          {/* Numbered step timeline */}
-          <ol className="relative">
-            {flow.steps.map((s, i) => {
-              const isLast = i === flow.steps.length - 1;
+        {/* Flowchart */}
+        <div className="px-6 py-6">
+          <div className="flex flex-col items-stretch">
+            {flow.nodes.map((n, i) => {
+              const branches = n.branches ?? [];
+              const detail = n.detail ?? [];
+              const isLast = i === flow.nodes.length - 1;
               return (
-                <li key={i} className="relative flex gap-4 pb-7 last:pb-0">
-                  {/* connector rail */}
-                  {!isLast && (
-                    <span className="absolute left-[17px] top-9 bottom-0 w-0.5 bg-slate-200" aria-hidden="true" />
-                  )}
-                  {/* number bubble */}
-                  <span
-                    className={`relative z-10 shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br ${accent} text-white text-[14px] font-semibold shadow-sm`}
-                  >
-                    {i + 1}
-                  </span>
-                  {/* content */}
-                  <div className="flex-1 pt-1">
-                    <h3 className="text-[15px] font-semibold text-slate-900 leading-snug">
-                      {s.title.replace(/^\d+\.\s*/, '')}
-                    </h3>
-                    <p className="mt-1.5 text-[14px] text-slate-600 leading-relaxed">{s.body}</p>
-                    {s.bullets && s.bullets.length > 0 && (
-                      <ul className="mt-2.5 space-y-1.5">
-                        {s.bullets.map((b, j) => (
-                          <li key={j} className="flex gap-2 text-[13px] text-slate-500 leading-relaxed">
-                            <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                <div key={i} className="flex flex-col items-stretch">
+                  {/* box */}
+                  <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <div className={`w-1.5 shrink-0 bg-gradient-to-b ${accent}`} aria-hidden="true" />
+                    <div className="px-4 py-3 flex-1 min-w-0">
+                      <div className="text-[13.5px] font-bold text-slate-900 tracking-wide">{n.stage}</div>
+                      {detail.map((d, j) => (
+                        <div key={j} className="mt-1 text-[13px] text-slate-600 leading-relaxed">{d}</div>
+                      ))}
+                      {branches.length > 0 && (
+                        <div className="mt-2.5 pl-1 font-mono text-[12px] text-slate-500 space-y-1">
+                          {branches.map((b, j) => (
+                            <div key={j} className="whitespace-pre-wrap">
+                              {(j === branches.length - 1 ? '└── ' : '├── ') + b}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </li>
+
+                  {/* connector + arrow */}
+                  {!isLast && (
+                    <div className="flex flex-col items-center py-1.5">
+                      {n.edge ? (
+                        <div className="max-w-sm text-center text-[11.5px] italic text-slate-400 mb-0.5">{n.edge}</div>
+                      ) : (
+                        <span className="block w-px h-2 bg-slate-200" aria-hidden="true" />
+                      )}
+                      <span className="text-slate-300">
+                        <DownArrow />
+                      </span>
+                    </div>
+                  )}
+                </div>
               );
             })}
-          </ol>
+          </div>
         </div>
       </div>
     </div>

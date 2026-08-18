@@ -237,7 +237,7 @@ const uniqueOutlets=new Set(V.flatMap(v=>v.stops.map(s=>s.o)).filter(o=>o.starts
 
 // KPIs
 const kpis=[
- {v:'4<span class="u">/5</span>',l:'Vehicles active today',bar:.8,c:'var(--v4)'},
+ {v:String(V.length),l:'Vehicles that ran',bar:Math.min(V.length/4,1),c:'var(--v4)'},
  {v:fleetDist.toFixed(1)+'<span class="u">km</span>',l:'Total distance driven',bar:1,c:'var(--v1)'},
  {v:deliveries,l:'Delivery stops',bar:.7,c:'var(--v2)'},
  {v:uniqueOutlets,l:'NutrioBox outlets served',bar:.7,c:'var(--v1)'},
@@ -393,8 +393,7 @@ const LEGS=DASH_DATA.LEGS;
   }).join('');
 })();
 
-document.getElementById('footnote').innerHTML=
- 'Every route begins and ends at <b>NutrioBox (Noida 63) – Depot</b> — the fixed dispatch base. Delivery stops are matched to NutrioBox outlets from the master list; brief traffic/transit pauses (under ~20&nbsp;min and away from any outlet) are treated as part of the drive, not as stops. Vehicle&nbsp;5 recorded no delivery run today. Some stops (Jamia Nagar, Kalyan Puri, Nawada) did not match the 10-outlet master list and are shown by their locality — please confirm their outlet names. factory&nbsp;vehicle was still out (not yet returned to depot) at the 17:56 snapshot. Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';
+document.getElementById('footnote').innerHTML=(function(){var un=[...new Set(V.flatMap(function(v){return v.stops.map(function(s){return s.o})}).filter(function(o){return !/^NutrioBox \(/.test(o)}))];return 'Every route begins and ends at <b>NutrioBox (NOIDA Sec 63) &ndash; Depot</b>, the fixed dispatch base. Stops within 300&nbsp;m of a NutrioBox outlet are named as that outlet; brief transit pauses away from any outlet are treated as driving, not stops. Monitoring window 10:00&ndash;19:00 IST. '+(un.length?('Stops that did not match the outlet master list are shown by their locality: '+un.join(', ')+' &mdash; please confirm their outlet names. '):'')+'Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';})()
 
 }
 window.addEventListener('scroll',()=>{const t=document.getElementById('tt');if(t)t.style.opacity=0;},{passive:true});

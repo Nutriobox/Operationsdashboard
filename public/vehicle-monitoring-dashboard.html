@@ -192,290 +192,19 @@
 <div id="tt"></div>
 
 <script>
-const DATASETS={"2026-08-11":{
-"depot": "NutrioBox (Noida 63) – Depot",
-"V": [
-{
-"name": "factory vehicle",
-"color": "#2a78d6",
-"soft": "var(--v1-soft)",
-"dist": 85.5,
-"drive": 154,
-"halt": 193,
-"dispatch": "12:08",
-"ret": "17:56",
-"stillOut": true,
-"stops": []
-},
-{
-"name": "Factory vehicle 2",
-"color": "#eb6834",
-"soft": "var(--v2-soft)",
-"dist": 82.5,
-"drive": 151,
-"halt": 92,
-"dispatch": "12:19",
-"ret": "16:22",
-"stillOut": false,
-"stops": []
-},
-{
-"name": "factory vehicle 3",
-"color": "#1baf7a",
-"soft": "var(--v3-soft)",
-"dist": 94.9,
-"drive": 171,
-"halt": 112,
-"dispatch": "12:20",
-"ret": "17:03",
-"stillOut": false,
-"stops": []
-},
-{
-"name": "factory vehicle 4",
-"color": "#8a5cf6",
-"soft": "var(--v4-soft)",
-"dist": 57.5,
-"drive": 137,
-"halt": 161,
-"dispatch": "12:37",
-"ret": "17:35",
-"stillOut": false,
-"stops": []
-}
-],
-"LEGS": {
-"factory vehicle": [
-[
-"NutrioBox (Noida 63) – Depot",
-"Jamia Nagar (not a listed outlet)",
-"12:08",
-null,
-null,
-null,
-null,
-"Jamia Nagar (not a listed outlet)",
-"0h 16m",
-"0h 34m",
-"Stop 0h 34m – not in 10-outlet master list (confirm name)"
-],
-[
-"Jamia Nagar (not a listed outlet)",
-"NutrioBox (Shivalik)",
-"12:58",
-null,
-null,
-null,
-null,
-"NutrioBox (Shivalik)",
-"0h 23m",
-"1h 01m",
-"Outlet reached – halt 1h 01m at outlet"
-],
-[
-"NutrioBox (Shivalik)",
-"NutrioBox (Sector 15, Gurugram)",
-"14:22",
-[
-"Delhi-Gurugram Expressway, Samalkha",
-"14:52"
-],
-null,
-null,
-null,
-"NutrioBox (Sector 15, Gurugram)",
-"0h 56m",
-"0h 42m",
-"Outlet reached – halt 0h 42m at outlet"
-],
-[
-"NutrioBox (Sector 15, Gurugram)",
-"Netaji Nagar (not a listed outlet)",
-"16:00",
-null,
-null,
-null,
-null,
-"Netaji Nagar (not a listed outlet)",
-"0h 59m",
-"0h 56m",
-"Currently at this location (as of 17:56) – not yet returned to depot"
-]
-],
-"Factory vehicle 2": [
-[
-"NutrioBox (Noida 63) – Depot",
-"Kalyan Puri (not a listed outlet)",
-"12:19",
-null,
-null,
-null,
-null,
-"Kalyan Puri (not a listed outlet)",
-"0h 07m",
-"0h 21m",
-"Stop 0h 21m – not in 10-outlet master list (confirm name)"
-],
-[
-"Kalyan Puri (not a listed outlet)",
-"NutrioBox (Prashant Vihar)",
-"12:47",
-[
-"Majnu Ka Tila, Delhi",
-"13:17"
-],
-[
-"Outer Ring Road, Pitampura, Delhi",
-"13:47"
-],
-null,
-null,
-"NutrioBox (Prashant Vihar)",
-"1h 14m",
-"1h 11m",
-"Outlet reached – halt 1h 11m at outlet"
-],
-[
-"NutrioBox (Prashant Vihar)",
-"NutrioBox (Noida 63) – Depot",
-"15:12",
-[
-"Mahatma Gandhi Marg, Civil Lines, Delhi",
-"15:42"
-],
-[
-"DME Service Road, Kalyan Puri, Delhi",
-"16:12"
-],
-null,
-null,
-"NutrioBox (Noida 63) – Depot",
-"1h 10m",
-"—",
-"Returned to Noida 63 depot – end of route"
-]
-],
-"factory vehicle 3": [
-[
-"NutrioBox (Noida 63) – Depot",
-"Jamia Nagar (not a listed outlet)",
-"12:20",
-null,
-null,
-null,
-null,
-"Jamia Nagar (not a listed outlet)",
-"0h 28m",
-"0h 25m",
-"Stop 0h 25m – not in 10-outlet master list (confirm name)"
-],
-[
-"Jamia Nagar (not a listed outlet)",
-"NutrioBox (Janakpuri)",
-"13:12",
-[
-"Cariappa Marg, Dhaula Kuan, Delhi Cantt",
-"13:42"
-],
-null,
-null,
-null,
-"NutrioBox (Janakpuri)",
-"0h 45m",
-"1h 06m",
-"Outlet reached – halt 1h 06m at outlet"
-],
-[
-"NutrioBox (Janakpuri)",
-"Nawada (not a listed outlet)",
-"15:03",
-null,
-null,
-null,
-null,
-"Nawada (not a listed outlet)",
-"0h 12m",
-"0h 21m",
-"Stop 0h 21m – not in 10-outlet master list (confirm name)"
-],
-[
-"Nawada (not a listed outlet)",
-"NutrioBox (Noida 63) – Depot",
-"15:37",
-null,
-[
-"Delhi-Dehradun Expressway, Preet Vihar",
-"16:37"
-],
-null,
-null,
-"NutrioBox (Noida 63) – Depot",
-"1h 26m",
-"—",
-"Returned to Noida 63 depot – end of route"
-]
-],
-"factory vehicle 4": [
-[
-"NutrioBox (Noida 63) – Depot",
-"NutrioBox (Karkardooma)",
-"12:37",
-[
-"DME Service Road, Kalyan Puri, Delhi",
-"13:07"
-],
-null,
-null,
-null,
-"NutrioBox (Karkardooma)",
-"0h 46m",
-"1h 01m",
-"Outlet reached – halt 1h 01m at outlet"
-],
-[
-"NutrioBox (Karkardooma)",
-"NutrioBox (Noida)",
-"14:24",
-[
-"Dadri Road, Chilla, Noida",
-"14:54"
-],
-null,
-null,
-null,
-"NutrioBox (Noida)",
-"0h 49m",
-"1h 40m",
-"Outlet reached – halt 1h 40m at outlet"
-],
-[
-"NutrioBox (Noida)",
-"NutrioBox (Noida 63) – Depot",
-"16:53",
-[
-"Vishwakarma Road, Mamura, Noida",
-"17:23"
-],
-null,
-null,
-null,
-"NutrioBox (Noida 63) – Depot",
-"0h 42m",
-"—",
-"Returned to Noida 63 depot – end of route"
-]
-]
-}
-}};
-const AVAILDATES=Object.keys(DATASETS).sort();
+let DATASETS={};
+let AVAILDATES=[];
 function render(CURDATE){
   const DASH_DATA=DATASETS[CURDATE];
   const board=document.getElementById('board'), notice=document.getElementById('noData');
   if(!DASH_DATA){notice.style.display='block';notice.textContent='No vehicle-monitoring data for '+CURDATE+' — a report is generated per day. Pick a date that has data.';board.style.opacity='0.2';return;}
   notice.style.display='none';board.style.opacity='1';
   try{document.querySelector('.meta').textContent='NutrioBox delivery fleet · '+new Date(CURDATE+'T00:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(e){}
+  document.getElementById('dwtext').textContent=DASH_DATA.window||'—';
   const DEPOT=DASH_DATA.depot;
   const V=DASH_DATA.V;
+  const _PAL=[['#2a78d6','#e9f1fc'],['#eb6834','#fdeee7'],['#1baf7a','#e5f6ef'],['#8a5cf6','#efeafe'],['#e0a13c','#fbf1dd']];
+  V.forEach((v,i)=>{if(!v.color){v.color=_PAL[i%5][0];v.soft=_PAL[i%5][1];}});
 const tmin=s=>{const[h,m]=s.split(':').map(Number);return h*60+m;};
 const hm=m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
 const durMin=s=>{if(!s||s==='—')return 0;const m=String(s).match(/(\d+)\s*h\s*(\d+)\s*m/);if(m)return +m[1]*60+ +m[2];const mm=String(s).match(/(\d+)\s*m/);return mm?+mm[1]:0;};
@@ -670,10 +399,15 @@ document.getElementById('footnote').innerHTML=
 }
 window.addEventListener('scroll',()=>{const t=document.getElementById('tt');if(t)t.style.opacity=0;},{passive:true});
 const _df=document.getElementById('dateFilter');
-_df.value=AVAILDATES[AVAILDATES.length-1];
-_df.min=AVAILDATES[0];
-_df.addEventListener('change',e=>render(e.target.value));
-render(_df.value);
+const _nd=document.getElementById('noData');
+fetch('vehicle-monitoring-data.json?_='+Date.now()).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(d=>{
+  DATASETS=d; AVAILDATES=Object.keys(DATASETS).sort();
+  if(!AVAILDATES.length){_nd.style.display='block';_nd.textContent='No report data available yet — the daily job has not produced any days.';return;}
+  _df.min=AVAILDATES[0]; _df.max=AVAILDATES[AVAILDATES.length-1];
+  _df.value=AVAILDATES[AVAILDATES.length-1];
+  _df.addEventListener('change',e=>render(e.target.value));
+  render(_df.value);
+}).catch(err=>{_nd.style.display='block';_nd.textContent='Could not load report data ('+err+'). If you just opened the file directly, it must be served by the site (fetch needs http), not opened as a local file.';});
 </script>
 </body>
 </html>

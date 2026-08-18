@@ -15,3 +15,7 @@ push-background-change.bat
 testfile
 testfile2
 tsconfig.tsbuildinfo
+
+# vehicle report automation
+automation/vehicle_report/vehicle_report_config.py
+reports/

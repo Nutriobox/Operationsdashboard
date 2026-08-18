@@ -260,10 +260,11 @@ function hideTT(){tt.style.opacity=0;}
 (function timeline(){
   const svg=document.getElementById('timeline');
   const W=1000, padL=150, padR=30, padT=30, rowH=72, padB=10;
-  const T0=600, T1=1110; // 10:00 - 18:30
+  const T0=600; let T1=1110; // 10:00 -> dynamic (covers evening returns)
+  (function(){let mx=1110;V.forEach(v=>{const es=[];if(v.dispatch)es.push(tmin(v.dispatch));(v.stops||[]).forEach(s=>{es.push(tmin(s.arr),tmin(s.dep));});if(v.ret)es.push(tmin(v.ret));es.forEach(e=>{if(isFinite(e)&&e>mx)mx=e;});});T1=Math.min(Math.ceil(mx/60)*60,1440);})();
   const H=padT+V.length*rowH+padB;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  const x=t=>padL+(t-T0)/(T1-T0)*(W-padL-padR);
+  const x=t=>{const raw=padL+(t-T0)/(T1-T0)*(W-padL-padR);return Math.max(padL,Math.min(raw,W-padR));};
   let s='';
   // hour gridlines
   for(let t=T0;t<=T1;t+=60){
@@ -393,7 +394,7 @@ const LEGS=DASH_DATA.LEGS;
   }).join('');
 })();
 
-document.getElementById('footnote').innerHTML=(function(){var un=[...new Set(V.flatMap(function(v){return v.stops.map(function(s){return s.o})}).filter(function(o){return !/^NutrioBox \(/.test(o)}))];return 'Every route begins and ends at <b>NutrioBox (NOIDA Sec 63) &ndash; Depot</b>, the fixed dispatch base. Stops within 300&nbsp;m of a NutrioBox outlet are named as that outlet; brief transit pauses away from any outlet are treated as driving, not stops. Monitoring window 10:00&ndash;19:00 IST. '+(un.length?('Stops that did not match the outlet master list are shown by their locality: '+un.join(', ')+' &mdash; please confirm their outlet names. '):'')+'Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';})()
+document.getElementById('footnote').innerHTML=(function(){var un=[...new Set(V.flatMap(function(v){return v.stops.map(function(s){return s.o})}).filter(function(o){return !/^NutrioBox \(/.test(o)}))];return 'Every route begins and ends at <b>NutrioBox (NOIDA Sec 63) &ndash; Depot</b>, the fixed dispatch base. Stops within 300&nbsp;m of a NutrioBox outlet are named as that outlet; brief transit pauses away from any outlet are treated as driving, not stops. Capture runs from 10:00 IST until each vehicle is back at the depot (evening or next morning); a vehicle still away at its last GPS fix is marked \'still out\'. '+(un.length?('Stops that did not match the outlet master list are shown by their locality: '+un.join(', ')+' &mdash; please confirm their outlet names. '):'')+'Distances and times are computed from raw OneLap GPS positions; interval-location names are reverse-geocoded.';})()
 
 }
 window.addEventListener('scroll',()=>{const t=document.getElementById('tt');if(t)t.style.opacity=0;},{passive:true});

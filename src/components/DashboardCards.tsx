@@ -224,7 +224,7 @@ const KOT_WEEKLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_WE
 const KOT_MONTHLY_SHEET_ID = '1TFCNxjX_0AGV2t2fkK_KzCMf3W9uMdSdVGbVB7_Nofw';
 const KOT_MONTHLY_FALLBACK_URL = `https://docs.google.com/spreadsheets/d/${KOT_MONTHLY_SHEET_ID}/edit`;
 
-const MOMOS_DASHBOARD_URL = '/nutriobox-momos-dashboard.html';
+const MOMOS_DASHBOARD_URL = '/dashboard/momos';
 
 /* ── Workflow algorithm diagrams (built from each tile's Claude scheduled task).
    Rendered as a top-to-bottom flowchart: each box is a stage with detail lines
@@ -272,7 +272,7 @@ const FLOWS: Record<string, Flow> = {
       { stage: 'PUBLISH TO WEBSITE',
         detail: ['Compress (~100 MB → ~8 MB) and upload to storage (Supabase)', 'Re-download and compare a checksum to confirm the right file'],
         edge: '' },
-      { stage: 'LIVE — operationsdashboard.nutriobox.com',
+      { stage: 'LIVE — opsdashboard.nutriobox.com',
         detail: ['Reviewed ~10 AM (morning run) and evening (afternoon run)'] },
     ],
   },
@@ -904,14 +904,12 @@ const CARDS: CardDef[] = [
     kotMonthly: true,
   },
   {
-    hrefFactory: () => MOMOS_DASHBOARD_URL,
+    href: MOMOS_DASHBOARD_URL,
     label: 'Momos Weekly Performance',
     desc: 'Weekly momo sales, units sold, and veg vs non-veg mix across outlets — variants and week-over-week trends.',
     icon: <MomosIcon />,
     accent: 'from-orange-500 to-red-600',
-    external: true,
-    badge: 'Live Dashboard',
-    cta: 'Open dashboard',
+    internal: true,
   },
 ];
 

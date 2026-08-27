@@ -39,6 +39,14 @@ html,body{margin:0;padding:0}
 .dash .xunit{fill:#b45309;font-size:10.5px;font-weight:700}
 .dash .axl{fill:#94a3b8;font-size:9.5px}
 .dash .axr{fill:#c2830c;font-size:9.5px}
+.dash .axttlL{fill:#6366f1;font-size:10px;font-weight:600}
+.dash .axttlR{fill:#c2830c;font-size:10px;font-weight:600}
+.dash .chartwrap{position:relative}
+.dash .hit{cursor:pointer}
+.dash svg .hit:hover{fill:rgba(99,102,241,.06)}
+.dash .tt{position:absolute;pointer-events:none;opacity:0;transition:opacity .08s ease;background:#0f172a;color:#fff;font-size:11px;line-height:1.4;padding:7px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,.28);white-space:nowrap;z-index:5;transform:translate(-50%,-100%)}
+.dash .tt .ttw{font-weight:700;margin-bottom:2px;font-size:11px}
+.dash .tt .tls{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .dash .clegend{display:flex;gap:16px;align-items:center;font-size:11.5px;color:var(--muted);flex-shrink:0}
 .dash .clegend span{display:inline-flex;align-items:center;gap:7px}
 .dash .clegend .sw{width:11px;height:11px;border-radius:3px}
@@ -125,8 +133,12 @@ function trendSVG(){
        +`<text x="${cx(i)}" y="${B0+35}" text-anchor="middle" class="xsub">${esc(D.weekSpans[i])}</text>`; });
   const pts=D.weekly.units.map((u,i)=>`${cx(i)},${yU(u)}`).join(" ");
   let dots=""; D.weekly.units.forEach((u,i)=>{ dots+=`<circle cx="${cx(i)}" cy="${yU(u)}" r="${i===LAST?5:3.5}" fill="${LINE}" stroke="#fff" stroke-width="1.5"/>`; });
-  return `<svg viewBox="0 0 ${PW} ${PH}" width="100%" role="img" style="display:block">${g}${bars}`
-    +`<polyline points="${pts}" fill="none" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg>`;
+  const midY=(T0+B0)/2;
+  const titles=`<text x="16" y="${midY}" text-anchor="middle" transform="rotate(-90 16 ${midY})" class="axttlL">Sales (₹)</text>`
+    +`<text x="${R0+40}" y="${midY}" text-anchor="middle" transform="rotate(90 ${R0+40} ${midY})" class="axttlR">Units sold</text>`;
+  let hit=""; D.weekLabels.forEach((lab,i)=>{ hit+=`<rect class="hit" x="${L0+band*i}" y="${T0}" width="${band}" height="${B0-T0}" fill="transparent" data-i="${i}"/>`; });
+  return `<svg viewBox="0 0 ${PW} ${PH}" width="100%" role="img" style="display:block">${g}${titles}${bars}`
+    +`<polyline points="${pts}" fill="none" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`;
 }
 
 function outletBars(){
@@ -195,7 +207,7 @@ function render(){
     <section class="card"><div class="chd"><div><h2>Weekly Momos Trend — Sales &amp; Quantity</h2>
       <p>Weekly momo sales (₹, bars) vs units sold (line). Weeks run Mon–Sun.</p></div>
       <div class="clegend"><span><i class="sw" style="background:${ACCENT}"></i>Sales (₹)</span><span><i class="swl" style="background:${LINE}"></i>Units</span></div></div>
-      ${trendSVG()}</section>
+      <div class="chartwrap">${trendSVG()}<div class="tt" id="tt"></div></div></section>
     <div class="row2">
       <section class="card"><div class="chd"><div><h2>Outlet-wise Momo Sales</h2><p>Veg vs Non-veg by outlet, ranked.</p></div>
         <div class="toggle"><button data-m="sales" class="${metric==='sales'?'on':''}">₹ Sales</button><button data-m="units" class="${metric==='units'?'on':''}">Units</button></div></div>
@@ -213,6 +225,21 @@ function render(){
   </div>`;
   const app=document.getElementById("app"); app.innerHTML=html;
   app.querySelectorAll(".toggle button").forEach(b=>b.addEventListener("click",()=>{ metric=b.dataset.m; render(); }));
+  const cw=app.querySelector(".chartwrap");
+  if(cw){ const tt=cw.querySelector("#tt");
+    cw.querySelectorAll(".hit").forEach(r=>{
+      r.addEventListener("mousemove",e=>{
+        const i=+r.dataset.i, cwr=cw.getBoundingClientRect(), rr=r.getBoundingClientRect();
+        tt.style.left=(rr.left+rr.width/2-cwr.left)+"px";
+        tt.style.top=(e.clientY-cwr.top-14)+"px";
+        tt.innerHTML=`<div class="ttw">${D.weekLabels[i]} · ${esc(D.weekSpans[i])}</div>`
+          +`<span class="tls" style="background:${ACCENT}"></span>Sales: <b>${lak(D.weekly.sales[i])}</b><br>`
+          +`<span class="tls" style="background:${LINE}"></span>Units: <b>${num(D.weekly.units[i])}</b>`;
+        tt.style.opacity=1;
+      });
+      r.addEventListener("mouseleave",()=>{ tt.style.opacity=0; });
+    });
+  }
 }
 render();
 

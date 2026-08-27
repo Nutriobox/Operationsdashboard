@@ -130,25 +130,21 @@ html,body{margin:0;padding:0}
 <div id="app" class="dash"></div>
 <script>
 
-const D = {"weekLabels":["Wk1","Wk2","Wk3","Wk4","Wk5","Wk6","Wk7","Wk8","Wk9","Wk10","Wk11","Wk12"],"weekSpans":["Jun 1–7","Jun 8–14","Jun 15–21","Jun 22–28","Jun 29–Jul 5","Jul 6–12","Jul 13–19","Jul 20–26","Jul 27–Aug 2","Aug 3–9","Aug 10–16","Aug 17–23"],"kpi":{"sales":8364429,"units":21143,"orders":18658,"aov":448,"vegSales":3989154,"nonvegSales":4375275},"weekly":{"sales":[650554,672545,665094,657271,701783,676935,708792,732542,714708,694349,719826,770030],"units":[1340,1323,1287,1286,1412,1340,1477,2361,2299,2239,2306,2473]},"outlets":{"names":["Prashant Vihar","Dwarka","Karkardooma","Janakpuri","Rajinder Nagar","DLF Phase 2","Shivalik","Noida","Sector 63 Noida","Sector 15, Gurugram"],"sales":[1227872,1088356,1075022,996057,919894,747551,751839,657259,480843,419736],"units":[3035,2652,2668,2466,2341,1863,1871,1703,1359,1185],"vegSales":[692562,483421,540517,441718,389723,355548,305521,341708,206286,232150],"nonvegSales":[535310,604935,534505,554339,530171,392003,446318,315551,274557,187586],"vegUnits":[1749,1178,1337,1095,1032,883,775,920,571,645],"nonvegUnits":[1286,1474,1331,1371,1309,980,1096,783,788,540]},"variants":["Steamed","Tandoori","Chilli Sauce"],"variantSplit":{"vegSales":[3141351,671153,176650],"nonvegSales":[3425027,735210,215038]},"tblNonveg":{"Steamed":[289173,277470,282254,269745,304633,301092,284733,317089,278318,251554,276515,292451],"Tandoori":[54190,62080,52172,56745,69631,60501,72245,60902,69979,58180,49626,68959],"Chilli Sauce":[19359,17614,17501,16563,20111,16106,21753,18299,14859,17811,17601,17461]},"tblVeg":{"Steamed":[228921,238622,246731,250819,254224,239815,259207,267176,279488,282062,292554,301732],"Tandoori":[45486,62676,49864,55768,41008,52063,54634,54424,53728,65953,64717,70832],"Chilli Sauce":[13425,14083,16572,7631,12176,7358,16220,14652,18336,18789,18813,18595]}};
+const D = {"weekLabels": ["Wk1", "Wk2", "Wk3", "Wk4", "Wk5", "Wk6", "Wk7", "Wk8", "Wk9", "Wk10", "Wk11", "Wk12"], "weekSpans": ["Jun 1\u20137", "Jun 8\u201314", "Jun 15\u201321", "Jun 22\u201328", "Jun 29\u2013Jul 5", "Jul 6\u201312", "Jul 13\u201319", "Jul 20\u201326", "Jul 27\u2013Aug 2", "Aug 3\u20139", "Aug 10\u201316", "Aug 17\u201323"], "weekly": {"sales": [682881, 677492, 688081, 715302, 756095, 689265, 736250, 731668, 717082, 692447, 720203, 770026], "units": [2195, 2188, 2200, 2287, 2420, 2207, 2363, 2355, 2307, 2233, 2306, 2473], "orders": [1955, 1925, 1923, 1979, 2056, 1934, 2057, 2053, 1990, 1942, 2017, 2183]}, "outletNames": ["Prashant Vihar", "Dwarka", "Karkardooma", "Janakpuri", "Rajinder Nagar", "DLF Phase 2", "Shivalik", "Noida", "Sector 63 Noida", "Sector 15, Gurugram"], "oSales": [[108981, 90809, 90462, 68220, 62563, 62215, 61238, 55603, 43817, 38973], [95416, 84242, 89757, 77299, 74301, 61662, 57301, 46938, 45979, 44597], [105803, 98144, 91753, 84176, 70522, 52525, 51511, 49309, 42988, 41350], [102459, 91280, 97699, 94853, 78352, 67904, 56887, 45520, 39465, 40883], [107956, 92902, 94275, 91984, 75066, 63379, 65299, 70665, 50115, 44454], [96055, 72298, 94919, 89058, 82141, 56471, 65996, 55328, 38497, 38502], [106149, 82304, 101431, 87057, 73881, 63045, 65404, 70881, 46777, 39321], [107951, 90777, 83611, 90667, 69658, 58400, 76389, 59032, 48575, 46608], [92908, 89416, 85680, 87943, 84243, 69729, 59200, 62274, 38496, 47193], [101317, 84390, 87848, 75235, 75342, 61558, 63484, 50763, 53099, 39411], [114216, 86477, 81263, 80371, 75361, 57597, 59160, 68867, 48142, 48749], [118537, 89858, 87083, 88353, 93585, 68653, 67323, 56641, 53770, 46223]], "oUnits": [[350, 295, 290, 219, 205, 200, 196, 178, 136, 126], [309, 274, 289, 250, 240, 197, 187, 154, 145, 143], [337, 319, 293, 269, 229, 168, 162, 160, 132, 131], [331, 294, 313, 302, 250, 216, 182, 145, 123, 131], [351, 304, 302, 291, 239, 199, 211, 225, 157, 141], [308, 237, 306, 282, 260, 182, 210, 179, 119, 124], [343, 272, 322, 280, 237, 201, 210, 227, 144, 127], [347, 297, 267, 290, 228, 187, 244, 192, 151, 152], [300, 290, 273, 283, 272, 224, 190, 202, 120, 153], [327, 277, 281, 243, 244, 198, 201, 167, 164, 131], [363, 282, 260, 256, 240, 184, 189, 224, 148, 160], [385, 288, 281, 285, 301, 218, 215, 182, 168, 150]], "oVegSales": [[49798, 36398, 39845, 26614, 26040, 21595, 24570, 27250, 20375, 20064], [48102, 34590, 44357, 36208, 32601, 28817, 21686, 23173, 20467, 24124], [56180, 38824, 43860, 37530, 28019, 23668, 20895, 24850, 15292, 22996], [51948, 35217, 48791, 36286, 35716, 31655, 22574, 20344, 18128, 18277], [60196, 38139, 39601, 36994, 34286, 28698, 27420, 32693, 21109, 23033], [49715, 29337, 44312, 33726, 32407, 25470, 25222, 27810, 12457, 16670], [62342, 37387, 41371, 33964, 29541, 30200, 25310, 41862, 16841, 20744], [58483, 39202, 41191, 41756, 27521, 26215, 28769, 31020, 18513, 21867], [55322, 40168, 44882, 39345, 39910, 33030, 21204, 33663, 17725, 27725], [60755, 46330, 49332, 35158, 36371, 26925, 31025, 31179, 26890, 22170], [69471, 39386, 43923, 37982, 32656, 31564, 29793, 40895, 25303, 25085], [74263, 40768, 46228, 42777, 44203, 35226, 27338, 29985, 23338, 27716]], "oNonSales": [[59183, 54411, 50617, 41606, 36523, 40620, 36668, 28353, 23442, 18909], [47314, 49652, 45400, 41091, 41700, 32845, 35615, 23765, 25512, 20473], [49623, 59320, 47893, 46646, 42503, 28857, 30616, 24459, 27696, 18354], [50511, 56063, 48908, 58567, 42636, 36249, 34313, 25176, 21337, 22606], [47760, 54763, 54674, 54990, 40780, 34681, 37879, 37972, 29006, 21421], [46340, 42961, 50607, 55332, 49734, 31001, 40774, 27518, 26040, 21832], [43807, 44917, 60060, 53093, 44340, 32845, 40094, 29019, 29936, 18577], [49468, 51575, 42420, 48911, 42137, 32185, 47620, 28012, 30062, 24741], [37586, 49248, 40798, 48598, 44333, 36699, 37996, 28611, 20771, 19468], [40562, 38060, 38516, 40077, 38971, 34633, 32459, 19584, 26209, 17241], [44745, 47091, 37340, 42389, 42705, 26033, 29367, 27972, 22839, 23664], [44274, 49090, 40855, 45576, 49382, 33427, 39985, 26656, 30432, 18507]], "oVegUnits": [[164, 126, 133, 88, 89, 73, 82, 91, 64, 67], [161, 119, 149, 122, 110, 94, 74, 79, 66, 80], [183, 132, 144, 125, 95, 77, 67, 84, 49, 74], [173, 118, 163, 122, 118, 104, 73, 70, 58, 63], [201, 132, 132, 122, 112, 92, 92, 109, 67, 75], [164, 101, 148, 113, 106, 85, 84, 93, 39, 57], [206, 130, 137, 114, 97, 99, 85, 138, 53, 70], [193, 134, 136, 138, 95, 87, 96, 104, 58, 74], [184, 138, 148, 132, 132, 110, 72, 113, 56, 92], [202, 157, 162, 117, 122, 90, 101, 106, 84, 77], [225, 134, 145, 125, 107, 105, 99, 138, 78, 84], [247, 135, 155, 142, 148, 115, 91, 101, 75, 93]], "oNonUnits": [[186, 169, 157, 131, 116, 127, 114, 87, 72, 59], [148, 155, 140, 128, 130, 103, 113, 75, 79, 63], [154, 187, 149, 144, 134, 91, 95, 76, 83, 57], [158, 176, 150, 180, 132, 112, 109, 75, 65, 68], [150, 172, 170, 169, 127, 107, 119, 116, 90, 66], [144, 136, 158, 169, 154, 97, 126, 86, 80, 67], [137, 142, 185, 166, 140, 102, 125, 89, 91, 57], [154, 163, 131, 152, 133, 100, 148, 88, 93, 78], [116, 152, 125, 151, 140, 114, 118, 89, 64, 61], [125, 120, 119, 126, 122, 108, 100, 61, 80, 54], [138, 148, 115, 131, 133, 79, 90, 86, 70, 76], [138, 153, 126, 143, 153, 103, 124, 81, 93, 57]], "variants": ["Steamed", "Tandoori", "Chilli Sauce"], "vVegSales": {"Steamed": [229247, 244969, 248488, 253785, 271578, 234767, 270996, 266238, 280586, 281393, 292204, 302674], "Tandoori": [50938, 53058, 49229, 53359, 53726, 51973, 56321, 53647, 54052, 66277, 64717, 70573], "Chilli Sauce": [12364, 16098, 14397, 11792, 16865, 10386, 12245, 14652, 18336, 18465, 19137, 18595]}, "vNonSales": {"Steamed": [306976, 283916, 299401, 309520, 324098, 308586, 301597, 317217, 278647, 250366, 276250, 292387], "Tandoori": [66228, 58536, 58287, 65650, 68883, 68978, 76797, 61281, 70602, 59137, 49626, 68002], "Chilli Sauce": [17128, 20915, 18279, 21196, 20945, 14575, 18294, 18633, 14859, 16809, 18269, 17795]}, "vVegUnits": {"Steamed": [766, 824, 822, 845, 905, 790, 902, 892, 941, 945, 971, 1014], "Tandoori": [170, 178, 162, 179, 175, 167, 187, 177, 177, 213, 208, 228], "Chilli Sauce": [41, 52, 46, 38, 54, 33, 40, 46, 59, 60, 61, 60]}, "vNonUnits": {"Steamed": [965, 891, 937, 962, 1011, 963, 944, 994, 870, 784, 860, 911], "Tandoori": [201, 180, 178, 199, 210, 210, 235, 189, 216, 180, 152, 207], "Chilli Sauce": [52, 63, 55, 64, 65, 44, 55, 57, 44, 51, 54, 53]}, "kpi": {"sales": 8576792, "units": 27534, "orders": 24014, "aov": 357, "vegSales": 4038127, "nonvegSales": 4538665, "vegUnits": 13428, "nonvegUnits": 14106}};
 const PERIOD = "1 Jun – 23 Aug 2026";
 const VEG="#16a34a", NONVEG="#dc2626", ACCENT="#6366f1", HL="#312e81", LINE="#f59e0b";
-const LAST = D.weekLabels.length - 1;               // newest week always highlighted
-const capEnd = PERIOD.split("–")[1].trim().replace(/\s*20\d\d$/,""); // e.g. "9 Aug"
+const NWK = D.weekLabels.length, LAST = NWK-1;
 
 function grp(n){ n=Math.round(n); let s=Math.abs(n).toString(); let l3=s.slice(-3), r=s.slice(0,-3);
   if(r) l3=","+l3; r=r.replace(/\B(?=(\d{2})+(?!\d))/g,","); return (n<0?"-":"")+r+l3; }
 const inr=n=>"₹"+grp(n), lak=n=>"₹"+(n/100000).toFixed(2)+"L", num=n=>grp(n);
 const sum=a=>a.reduce((x,y)=>x+y,0);
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
-
-let metric="sales";
+const fmtVal=(v,m)=> m==="units"?num(v):lak(v);
 
 // ---- week/date helpers (weeks run Mon–Sun, Wk1 starts 1 Jun 2026) ----
-const NWK = D.weekLabels.length;
-const WK0 = new Date(2026,5,1);                       // 1 Jun 2026 (Monday)
-const ALLWK = Array.from({length:NWK},(_,i)=>i);
-const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WK0=new Date(2026,5,1), ALLWK=Array.from({length:NWK},(_,i)=>i);
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function dOnly(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
 function wkStart(i){ const d=new Date(WK0); d.setDate(d.getDate()+7*i); return d; }
 function wkEnd(i){ const d=wkStart(i); d.setDate(d.getDate()+6); return d; }
@@ -159,15 +155,29 @@ function fmtD(d){ return d.getDate()+" "+MON[d.getMonth()]; }
 function rangeLabel(idxs){ if(!idxs||!idxs.length) return "No data";
   if(idxs.length===NWK) return fmtD(DATA_START)+" – "+fmtD(DATA_END);
   return fmtD(wkStart(idxs[0]))+" – "+fmtD(wkEnd(idxs[idxs.length-1])); }
-// aggregate veg/non-veg and per-variant sales over a set of week indices
-function aggVN(idxs){ let v=0,n=0; D.variants.forEach(va=>idxs.forEach(i=>{ v+=D.tblVeg[va][i]; n+=D.tblNonveg[va][i]; })); return {vegSales:v,nonvegSales:n,sales:v+n}; }
-function aggVM(idxs){ return D.variants.map(va=>{ let v=0,n=0; idxs.forEach(i=>{ v+=D.tblVeg[va][i]; n+=D.tblNonveg[va][i]; }); return {veg:v,nonveg:n,tot:v+n}; }); }
-// persisted selections (survive metric re-render); default = whole period
-let selVN = ALLWK.slice(), selVM = ALLWK.slice();
 
+// ---- aggregations over a set of week indices ----
+function sumCols(mat,W){ const n=D.outletNames.length, out=new Array(n).fill(0);
+  W.forEach(w=>{ const r=mat[w]; for(let i=0;i<n;i++) out[i]+=r[i]; }); return out; }
+function outletAgg(W,m){ const S=m==="units"?D.oUnits:D.oSales, Vg=m==="units"?D.oVegUnits:D.oVegSales, Nn=m==="units"?D.oNonUnits:D.oNonSales;
+  const s=sumCols(S,W), vg=sumCols(Vg,W), nn=sumCols(Nn,W);
+  return D.outletNames.map((nm,i)=>({name:nm,val:s[i],veg:vg[i],non:nn[i]})); }
+function vnAgg(W,m){ const Vg=m==="units"?D.oVegUnits:D.oVegSales, Nn=m==="units"?D.oNonUnits:D.oNonSales;
+  const vg=sum(sumCols(Vg,W)), nn=sum(sumCols(Nn,W)); return {veg:vg,non:nn,total:vg+nn}; }
+function variantMixAgg(W){ return D.variants.map(v=>{ let vs=0,ns=0; W.forEach(w=>{vs+=D.vVegSales[v][w]; ns+=D.vNonSales[v][w];}); return {v,veg:vs,non:ns,tot:vs+ns}; }); }
+function outletTableAgg(W){ const vs=sumCols(D.oVegSales,W), ns=sumCols(D.oNonSales,W), s=sumCols(D.oSales,W), u=sumCols(D.oUnits,W);
+  return D.outletNames.map((nm,i)=>({name:nm,veg:vs[i],non:ns[i],tot:s[i],units:u[i]})); }
+// per-week cell for variant tables
+function vCell(side,v,w,m){ if(side==="veg"){ return m==="units"?D.vVegUnits[v][w]:D.vVegSales[v][w]; } return m==="units"?D.vNonUnits[v][w]:D.vNonSales[v][w]; }
+
+// persisted UI state (survive re-render)
+let selOutlet=ALLWK.slice(), selVN=ALLWK.slice(), selVM=ALLWK.slice(), selOtbl=ALLWK.slice();
+let mOutlet="sales", mVN="sales", mNV="sales", mV="sales";
+
+// ---------- chart (weekly trend, with axis titles + hover tooltips) ----------
 function trendSVG(){
-  const salesMax=Math.max(...D.weekly.sales), unitsMax=Math.max(...D.weekly.units), GN=5;
-  const salesTop=Math.ceil((salesMax*1.08)/500000)*500000, unitsTop=Math.ceil(unitsMax/500)*500;
+  const salesMax=Math.max(...D.weekly.sales), unitsMax=Math.max(...D.weekly.units);
+  const GN=5, salesTop=Math.ceil((salesMax*1.08)/500000)*500000, unitsTop=Math.ceil(unitsMax/500)*500;
   const R0=702,L0=58,T0=26,B0=244,PW=760,PH=300;
   const band=(R0-L0)/D.weekLabels.length, barW=Math.min(38,band*0.42);
   const yS=v=>B0-(v/salesTop)*(B0-T0), yU=v=>B0-(v/unitsTop)*(B0-T0), cx=i=>L0+band*i+band/2;
@@ -192,61 +202,59 @@ function trendSVG(){
     +`<polyline points="${pts}" fill="none" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`;
 }
 
-function outletBars(){
-  const oVeg=metric==="sales"?D.outlets.vegSales:D.outlets.vegUnits;
-  const oNon=metric==="sales"?D.outlets.nonvegSales:D.outlets.nonvegUnits;
-  const oRow=D.outlets.names.map((_,i)=>oVeg[i]+oNon[i]); const oMax=Math.max(...oRow);
-  return D.outlets.names.map((nm,i)=>`<div class="brow"><div class="bname">${esc(nm)}</div>`
-    +`<div class="btrack"><div class="bfill" style="width:${oRow[i]/oMax*100}%">`
-    +`<div style="width:${oVeg[i]/oRow[i]*100}%;background:${VEG}"></div>`
-    +`<div style="width:${oNon[i]/oRow[i]*100}%;background:${NONVEG}"></div></div></div>`
-    +`<div class="bval">${metric==="sales"?lak(oRow[i]):num(oRow[i])}</div></div>`).join("");
+// ---------- filterable card bodies ----------
+function outletBars(W,m){
+  const rows=outletAgg(W,m).slice().sort((a,b)=>b.val-a.val);
+  const oMax=Math.max(...rows.map(r=>r.val),1);
+  return rows.map(r=>{ const base=r.val||1;
+    return `<div class="brow"><div class="bname">${esc(r.name)}</div>`
+    +`<div class="btrack"><div class="bfill" style="width:${r.val/oMax*100}%">`
+    +`<div style="width:${r.veg/base*100}%;background:${VEG}"></div>`
+    +`<div style="width:${r.non/base*100}%;background:${NONVEG}"></div></div></div>`
+    +`<div class="bval">${fmtVal(r.val,m)}</div></div>`; }).join("");
 }
-
-function variantMix(idxs){
-  idxs=idxs||ALLWK; const rows=aggVM(idxs);
-  const varMax=Math.max(...rows.map(r=>r.tot),1);
-  return D.variants.map((v,i)=>{ const r=rows[i], t=r.tot||0, base=t||1;
-    return `<div class="brow"><div class="bname" style="width:92px">${esc(v)}</div>`
-      +`<div class="btrack"><div class="bfill" style="width:${t/varMax*100}%">`
-      +`<div style="width:${r.veg/base*100}%;background:${VEG}"></div>`
-      +`<div style="width:${r.nonveg/base*100}%;background:${NONVEG}"></div></div></div>`
-      +`<div class="bval">${lak(t)}</div></div>`; }).join("");
-}
-
-function donut(idxs){
-  idxs=idxs||ALLWK; const a=aggVN(idxs), total=a.sales||1;
-  const vegPct=a.vegSales/total*100, DC=2*Math.PI*64, vegLen=a.vegSales/total*DC;
+function donut(W,m){
+  const a=vnAgg(W,m), total=a.total||1, vegPct=a.veg/total*100, DC=2*Math.PI*64, vegLen=a.veg/total*DC;
+  const centerBig=m==="units"?num(a.total):lak(a.total), centerSub=m==="units"?"momo units":"momo sales";
   return `<svg viewBox="0 0 180 180" width="176" height="176" role="img" style="display:block;margin:6px auto 2px">`
     +`<g transform="rotate(-90 90 90)"><circle cx="90" cy="90" r="64" fill="none" stroke="#eef2f6" stroke-width="24"/>`
     +`<circle cx="90" cy="90" r="64" fill="none" stroke="${VEG}" stroke-width="24" stroke-dasharray="${vegLen} ${DC-vegLen}"/>`
     +`<circle cx="90" cy="90" r="64" fill="none" stroke="${NONVEG}" stroke-width="24" stroke-dasharray="${DC-vegLen} ${vegLen}" stroke-dashoffset="${-vegLen}"/></g>`
-    +`<text x="90" y="86" text-anchor="middle" class="donutBig">${lak(a.sales)}</text>`
-    +`<text x="90" y="105" text-anchor="middle" class="donutSub">momo sales</text></svg>`
-    +`<div class="vnrow"><span><i style="background:${VEG}"></i>Veg</span><b>${lak(a.vegSales)} · ${vegPct.toFixed(1)}%</b></div>`
-    +`<div class="vnrow"><span><i style="background:${NONVEG}"></i>Non-veg</span><b>${lak(a.nonvegSales)} · ${(100-vegPct).toFixed(1)}%</b></div>`;
+    +`<text x="90" y="86" text-anchor="middle" class="donutBig">${centerBig}</text>`
+    +`<text x="90" y="105" text-anchor="middle" class="donutSub">${centerSub}</text></svg>`
+    +`<div class="vnrow"><span><i style="background:${VEG}"></i>Veg</span><b>${fmtVal(a.veg,m)} · ${vegPct.toFixed(1)}%</b></div>`
+    +`<div class="vnrow"><span><i style="background:${NONVEG}"></i>Non-veg</span><b>${fmtVal(a.non,m)} · ${(100-vegPct).toFixed(1)}%</b></div>`;
 }
-
-function variantTable(title,dot,tbl){
-  const colTot=D.weekLabels.map(()=>0); D.variants.forEach(v=>tbl[v].forEach((x,i)=>colTot[i]+=x));
+function variantMix(W){
+  const rows=variantMixAgg(W), varMax=Math.max(...rows.map(r=>r.tot),1);
+  return rows.map(r=>{ const t=r.tot||0, base=t||1;
+    return `<div class="brow"><div class="bname" style="width:92px">${esc(r.v)}</div>`
+      +`<div class="btrack"><div class="bfill" style="width:${t/varMax*100}%">`
+      +`<div style="width:${r.veg/base*100}%;background:${VEG}"></div>`
+      +`<div style="width:${r.non/base*100}%;background:${NONVEG}"></div></div></div>`
+      +`<div class="bval">${lak(t)}</div></div>`; }).join("");
+}
+function variantTableBody(side,m){
+  const fmt=m==="units"?num:inr;
+  const colTot=D.weekLabels.map((_,w)=>D.variants.reduce((s,v)=>s+vCell(side,v,w,m),0));
   const head=`<tr><th>Variant</th>${D.weekLabels.map((w,i)=>`<th class="${i===LAST?'wk5':''}">${w}</th>`).join("")}<th>Total</th></tr>`;
-  const rows=D.variants.map(v=>`<tr><td>${esc(v)}</td>${tbl[v].map((x,i)=>`<td class="${i===LAST?'wk5':''}">${inr(x)}</td>`).join("")}<td>${inr(sum(tbl[v]))}</td></tr>`).join("");
-  const tot=`<tr class="tot"><td>Total</td>${colTot.map((x,i)=>`<td class="${i===LAST?'wk5':''}">${inr(x)}</td>`).join("")}<td>${inr(sum(colTot))}</td></tr>`;
-  return `<section class="card"><h2><span class="dt" style="background:${dot}"></span>${esc(title)}</h2>`
-    +`<p class="pd">Order-total sales (₹). Latest week highlighted.</p>`
-    +`<div class="tblwrap"><table><thead>${head}</thead><tbody>${rows}${tot}</tbody></table></div></section>`;
+  const rows=D.variants.map(v=>{ const cells=D.weekLabels.map((_,w)=>vCell(side,v,w,m)); const tot=sum(cells);
+    return `<tr><td>${esc(v)}</td>${cells.map((x,i)=>`<td class="${i===LAST?'wk5':''}">${fmt(x)}</td>`).join("")}<td>${fmt(tot)}</td></tr>`; }).join("");
+  const tot=`<tr class="tot"><td>Total</td>${colTot.map((x,i)=>`<td class="${i===LAST?'wk5':''}">${fmt(x)}</td>`).join("")}<td>${fmt(sum(colTot))}</td></tr>`;
+  return `<thead>${head}</thead><tbody>${rows}${tot}</tbody>`;
+}
+function outletTableBody(W){
+  const rows=outletTableAgg(W).slice().sort((a,b)=>b.tot-a.tot);
+  const body=rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${inr(r.veg)}</td><td>${inr(r.non)}</td><td><b>${inr(r.tot)}</b></td><td>${num(r.units)}</td></tr>`).join("");
+  const tv=sum(rows.map(r=>r.veg)), tn=sum(rows.map(r=>r.non)), ts=sum(rows.map(r=>r.tot)), tu=sum(rows.map(r=>r.units));
+  const tot=`<tr class="tot"><td>Total</td><td>${inr(tv)}</td><td>${inr(tn)}</td><td>${inr(ts)}</td><td>${num(tu)}</td></tr>`;
+  return `<thead><tr><th>Outlet</th><th>Veg ₹</th><th>Non-veg ₹</th><th>Total ₹</th><th>Units</th></tr></thead><tbody>${body}${tot}</tbody>`;
 }
 
-function outletTable(){
-  const rows=D.outlets.names.map((nm,i)=>`<tr><td>${esc(nm)}</td><td>${inr(D.outlets.vegSales[i])}</td><td>${inr(D.outlets.nonvegSales[i])}</td><td><b>${inr(D.outlets.sales[i])}</b></td><td>${num(D.outlets.units[i])}</td></tr>`).join("");
-  const tot=`<tr class="tot"><td>Total</td><td>${inr(sum(D.outlets.vegSales))}</td><td>${inr(sum(D.outlets.nonvegSales))}</td><td>${inr(D.kpi.sales)}</td><td>${num(D.kpi.units)}</td></tr>`;
-  return `<section class="card"><h2>Outlet-wise Momo Sales — Veg vs Non-veg</h2>`
-    +`<p class="pd">Total momo sales (₹) and units per outlet, ${esc(PERIOD.replace(/\s*20\d\d$/,""))}.</p>`
-    +`<div class="tblwrap"><table><thead><tr><th>Outlet</th><th>Veg ₹</th><th>Non-veg ₹</th><th>Total ₹</th><th>Units</th></tr></thead>`
-    +`<tbody>${rows}${tot}</tbody></table></div></section>`;
-}
+function toggleHTML(scope,cur){ return `<div class="toggle" data-scope="${scope}"><button data-m="sales" class="${cur==='sales'?'on':''}">₹ Sales</button><button data-m="units" class="${cur==='units'?'on':''}">Units</button></div>`; }
+function calBadge(key,sel){ return `<button class="calbadge" id="calbtn-${key}"><span class="calico">📅</span><span id="callabel-${key}">${rangeLabel(sel)}</span></button>`; }
 
-// ---- date-range calendar (one instance per card, independent) ----
+// ---------- date-range calendar (independent per card; opens with nothing selected) ----------
 function setupCal(key, getSel, applyCb){
   const btn=document.getElementById("calbtn-"+key); if(!btn) return;
   const host=btn.parentNode; host.style.position="relative";
@@ -270,8 +278,7 @@ function setupCal(key, getSel, applyCb){
   }
   function footText(){ const f=d=>String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
     const effEnd=se||hov; if(!ss) return "Pick a start date"; return f(ss)+(effEnd?" – "+f(effEnd):" – …"); }
-  function draw(){
-    const rM=new Date(leftM.getFullYear(),leftM.getMonth()+1,1);
+  function draw(){ const rM=new Date(leftM.getFullYear(),leftM.getMonth()+1,1);
     pop.innerHTML=`<div class="calpresets">`
       +`<button data-preset="all">Full period</button><button data-preset="today">Today</button>`
       +`<button data-preset="yst">Yesterday</button><button data-preset="l7">Last 7 Days</button>`
@@ -307,9 +314,7 @@ function setupCal(key, getSel, applyCb){
     hov=null; draw();
   }
   function onOver(e){ const cell=e.target.closest(".cd.hasdata"); if(cell && ss && !se){ hov=parse(cell.dataset.date); draw(); } }
-  function openPop(){ const cur=getSel()||[];
-    if(cur.length){ ss=dOnly(wkStart(cur[0])); se=dOnly(wkEnd(cur[cur.length-1])); } else { ss=null; se=null; }
-    hov=null; leftM=new Date(DATA_END.getFullYear(),DATA_END.getMonth()-1,1);
+  function openPop(){ ss=null; se=null; hov=null; leftM=new Date(DATA_END.getFullYear(),DATA_END.getMonth()-1,1);
     pop=document.createElement("div"); pop.className="calpop"; host.appendChild(pop); btn.classList.add("on"); draw();
     pop.addEventListener("click",onClick); pop.addEventListener("dblclick",onDbl); pop.addEventListener("mouseover",onOver);
     setTimeout(()=>document.addEventListener("mousedown",outside,true),0);
@@ -319,6 +324,7 @@ function setupCal(key, getSel, applyCb){
   btn.addEventListener("click",()=>{ pop?closePop():openPop(); });
 }
 
+// ---------- render ----------
 function render(){
   const kpis=[["Momo Sales",lak(D.kpi.sales),"overall sales"],["Units Sold",num(D.kpi.units),"total quantity"],
     ["Momo Orders",num(D.kpi.orders),"total orders"],["Avg Order Value","₹"+D.kpi.aov,"order-bill basis"]]
@@ -326,7 +332,7 @@ function render(){
   const html=`<div class="wrap">
     <header class="hdr"><div class="brand"><div class="mark">🥟</div>
       <div><h1>Momos Performance Dashboard</h1>
-      <div class="sub">NutrioBox · 10 outlets · Sales = order-bill total (dedup by invoice) · Qty = item_quantity</div></div></div>
+      <div class="sub">NutrioBox · 10 outlets · Sales = momo item total · Qty = item_quantity</div></div></div>
       <div class="period">${esc(PERIOD)}</div></header>
     <div class="kpis">${kpis}</div>
     <section class="card"><div class="chd"><div><h2>Weekly Momos Trend — Sales &amp; Quantity</h2>
@@ -334,46 +340,62 @@ function render(){
       <div class="clegend"><span><i class="sw" style="background:${ACCENT}"></i>Sales (₹)</span><span><i class="swl" style="background:${LINE}"></i>Units</span></div></div>
       <div class="chartwrap">${trendSVG()}<div class="tt" id="tt"></div></div></section>
     <div class="row2">
-      <section class="card"><div class="chd"><div><h2>Outlet-wise Momo Sales</h2><p>Veg vs Non-veg by outlet, ranked.</p></div>
-        <div class="toggle"><button data-m="sales" class="${metric==='sales'?'on':''}">₹ Sales</button><button data-m="units" class="${metric==='units'?'on':''}">Units</button></div></div>
-        <div class="bars" id="obars">${outletBars()}</div>
+      <section class="card">
+        <div class="chd"><div><h2>Outlet-wise Momo Sales</h2><p>Veg vs Non-veg by outlet, ranked.</p></div>
+          <div style="display:flex;gap:8px;align-items:center">${toggleHTML("outlet",mOutlet)}${calBadge("outlet",selOutlet)}</div></div>
+        <div class="bars" id="obars">${outletBars(selOutlet,mOutlet)}</div>
         <div class="leg"><span><i style="background:${VEG}"></i>Veg</span><span><i style="background:${NONVEG}"></i>Non-veg</span></div></section>
       <section class="card">
-        <div class="chd"><div><h2>Veg vs Non-veg</h2><p class="pd">Share of momo sales (₹).</p></div>
-          <button class="calbadge" id="calbtn-vn"><span class="calico">📅</span><span id="callabel-vn">${rangeLabel(selVN)}</span></button></div>
-        <div id="vnbox">${donut(selVN)}</div>
+        <div class="chd"><div><h2>Veg vs Non-veg</h2><p class="pd">Share of momo ${mVN==='units'?'units':'sales (₹)'}.</p></div>
+          <div style="display:flex;gap:8px;align-items:center">${toggleHTML("vn",mVN)}${calBadge("vn",selVN)}</div></div>
+        <div id="vnbox">${donut(selVN,mVN)}</div>
         <div class="chd" style="margin-top:22px"><div><h2>Variant mix</h2><p class="pd">By variant (₹), split veg / non-veg.</p></div>
-          <button class="calbadge" id="calbtn-vm"><span class="calico">📅</span><span id="callabel-vm">${rangeLabel(selVM)}</span></button></div>
+          ${calBadge("vm",selVM)}</div>
         <div class="bars" id="vmbox">${variantMix(selVM)}</div></section>
     </div>
-    ${variantTable("Chicken (Non-veg) — Weekly Sales by Variant",NONVEG,D.tblNonveg)}
-    ${variantTable("Veg — Weekly Sales by Variant",VEG,D.tblVeg)}
-    ${outletTable()}
-    <p class="note"><b>Data note.</b> Built from your momo CSV (one row per invoice, deduplicated). Momo sales = order bill total per invoice; units = item_quantity. Weeks are Mon–Sun. Totals: <b>${num(D.kpi.orders)} momo orders · ${num(D.kpi.units)} units · ${lak(D.kpi.sales)}</b> across 10 outlets.</p>
+    <section class="card">
+      <div class="chd"><div><h2><span class="dt" style="background:${NONVEG}"></span>Chicken (Non-veg) — Weekly Sales by Variant</h2>
+        <p class="pd">${mNV==='units'?'Units':'Order-total sales (₹)'} per variant. Latest week highlighted.</p></div>${toggleHTML("nv",mNV)}</div>
+      <div class="tblwrap"><table id="nvtbl">${variantTableBody("non",mNV)}</table></div></section>
+    <section class="card">
+      <div class="chd"><div><h2><span class="dt" style="background:${VEG}"></span>Veg — Weekly Sales by Variant</h2>
+        <p class="pd">${mV==='units'?'Units':'Order-total sales (₹)'} per variant. Latest week highlighted.</p></div>${toggleHTML("v",mV)}</div>
+      <div class="tblwrap"><table id="vtbl">${variantTableBody("veg",mV)}</table></div></section>
+    <section class="card">
+      <div class="chd"><div><h2>Outlet-wise Momo Sales — Veg vs Non-veg</h2><p class="pd">Total momo sales (₹) and units per outlet.</p></div>
+        ${calBadge("otbl",selOtbl)}</div>
+      <div class="tblwrap"><table id="otbl-t">${outletTableBody(selOtbl)}</table></div></section>
+    <p class="note"><b>Data note.</b> Built from your momo CSV (Petpooja Order Summary Item, deduplicated). Momo sales = sum of momo item total; units = item_quantity; orders = distinct invoices with momos. Weeks are Mon–Sun. Totals: <b>${num(D.kpi.orders)} momo orders · ${num(D.kpi.units)} units · ${lak(D.kpi.sales)}</b> across 10 outlets.</p>
   </div>`;
   const app=document.getElementById("app"); app.innerHTML=html;
-  app.querySelectorAll(".toggle button").forEach(b=>b.addEventListener("click",()=>{ metric=b.dataset.m; render(); }));
+
+  // metric toggles
+  app.querySelectorAll(".toggle").forEach(tg=>{ const scope=tg.dataset.scope;
+    tg.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+      const m=b.dataset.m;
+      if(scope==="outlet") mOutlet=m; else if(scope==="vn") mVN=m; else if(scope==="nv") mNV=m; else if(scope==="v") mV=m;
+      render();
+    })); });
+
+  // chart tooltips
   const cw=app.querySelector(".chartwrap");
   if(cw){ const tt=cw.querySelector("#tt");
     cw.querySelectorAll(".hit").forEach(r=>{
-      r.addEventListener("mousemove",e=>{
-        const i=+r.dataset.i, cwr=cw.getBoundingClientRect(), rr=r.getBoundingClientRect();
-        tt.style.left=(rr.left+rr.width/2-cwr.left)+"px";
-        tt.style.top=(e.clientY-cwr.top-14)+"px";
+      r.addEventListener("mousemove",e=>{ const i=+r.dataset.i, cwr=cw.getBoundingClientRect(), rr=r.getBoundingClientRect();
+        tt.style.left=(rr.left+rr.width/2-cwr.left)+"px"; tt.style.top=(e.clientY-cwr.top-14)+"px";
         tt.innerHTML=`<div class="ttw">${D.weekLabels[i]} · ${esc(D.weekSpans[i])}</div>`
           +`<span class="tls" style="background:${ACCENT}"></span>Sales: <b>${lak(D.weekly.sales[i])}</b><br>`
           +`<span class="tls" style="background:${LINE}"></span>Units: <b>${num(D.weekly.units[i])}</b>`;
-        tt.style.opacity=1;
-      });
+        tt.style.opacity=1; });
       r.addEventListener("mouseleave",()=>{ tt.style.opacity=0; });
     });
   }
-  setupCal("vn", ()=>selVN, idxs=>{ selVN=idxs;
-    document.getElementById("vnbox").innerHTML=donut(selVN);
-    document.getElementById("callabel-vn").textContent=rangeLabel(selVN); });
-  setupCal("vm", ()=>selVM, idxs=>{ selVM=idxs;
-    document.getElementById("vmbox").innerHTML=variantMix(selVM);
-    document.getElementById("callabel-vm").textContent=rangeLabel(selVM); });
+
+  // calendars (each independent; re-render on apply so everything stays consistent)
+  setupCal("outlet", ()=>selOutlet, idxs=>{ selOutlet=idxs; render(); });
+  setupCal("vn", ()=>selVN, idxs=>{ selVN=idxs; render(); });
+  setupCal("vm", ()=>selVM, idxs=>{ selVM=idxs; render(); });
+  setupCal("otbl", ()=>selOtbl, idxs=>{ selOtbl=idxs; render(); });
 }
 render();
 

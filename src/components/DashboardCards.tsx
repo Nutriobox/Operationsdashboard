@@ -911,6 +911,14 @@ const CARDS: CardDef[] = [
     accent: 'from-orange-500 to-red-600',
     internal: true,
   },
+  {
+    href: '/dashboard/discount-analytics',
+    label: 'Discount Analytics',
+    desc: 'Regular discount programme across the four tiers (10/20/50/100%) — daily spend, per-outlet split, full customer list with order history, and the cleaned data export.',
+    icon: <DiscountIcon />,
+    accent: 'from-lime-500 to-green-600',
+    internal: true,
+  },
 ];
 
 /* ── Workflow modal — light-theme top-to-bottom flowchart ── */

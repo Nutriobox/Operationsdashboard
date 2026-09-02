@@ -187,9 +187,9 @@ function trendSVG(){
       +`<text x="${L0-9}" y="${gy+3.5}" text-anchor="end" class="axl">₹${salesTop*k/GN/100000}L</text>`
       +`<text x="${R0+9}" y="${gy+3.5}" text-anchor="start" class="axr">${num(unitsTop*k/GN)}</text>`; }
   let bars="";
-  D.weekLabels.forEach((lab,i)=>{ const yv=yS(D.weekly.sales[i]);
+  D.weekLabels.forEach((lab,i)=>{ const yv=yS(D.weekly.sales[i]), labY=Math.min(yv,yU(D.weekly.units[i]))-11;
     bars+=`<rect x="${cx(i)-barW/2}" y="${yv}" width="${barW}" height="${B0-yv}" rx="4" fill="${i===LAST?HL:ACCENT}"/>`
-       +`<text x="${cx(i)}" y="${yv-9}" text-anchor="middle" class="blab">${lak(D.weekly.sales[i])}</text>`
+       +`<text x="${cx(i)}" y="${labY}" text-anchor="middle" class="blab">${lak(D.weekly.sales[i])}</text>`
        +`<text x="${cx(i)}" y="${B0+20}" text-anchor="middle" class="xlab">${lab}</text>`
        +`<text x="${cx(i)}" y="${B0+35}" text-anchor="middle" class="xsub">${esc(D.weekSpans[i])}</text>`; });
   const pts=D.weekly.units.map((u,i)=>`${cx(i)},${yU(u)}`).join(" ");

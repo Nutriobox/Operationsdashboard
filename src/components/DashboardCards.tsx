@@ -237,18 +237,42 @@ type FlowNode = {
   edge?: string;
 };
 
+/* Playwright migration programme status (audited 2026-09-07).
+     playwright — cut over: runs as a Windows-scheduled Playwright job, no Claude tokens.
+     ready      — port written and verified, awaiting laptop validation + cutover.
+     pending    — still runs as a Claude/Cowork task; no port yet.
+     na         — no scheduled data job, or no browser step to migrate.
+   Programme tally @ 2026-09-07: 9 tiles fully on Playwright (Sales, Discount report,
+     Delay, Ratings, Daily Sheet, Daily/Weekly/Monthly KOT, Momos) + the Monthly-tab and
+     Weekly-sales-sync fills behind the sheets; the 5 AM discount upload and the whole
+     Weekly Dashboard (report + dining/delivery) plus the monthly rebuild/resync,
+     3× incentive fills and the Monday reminder are the pieces still on Claude. */
+type Migration = {
+  status: 'playwright' | 'ready' | 'pending' | 'na';
+  note: string;
+};
+
 type Flow = {
   automated: boolean;
   tasks: string[];
   schedule: string;
+  migration: Migration;
   nodes: FlowNode[];
+};
+
+const MIGRATION_BADGE: Record<Migration['status'], { label: string; cls: string }> = {
+  playwright: { label: 'Playwright', cls: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+  ready: { label: 'Port ready', cls: 'text-amber-700 bg-amber-50 border-amber-100' },
+  pending: { label: 'On Claude', cls: 'text-rose-700 bg-rose-50 border-rose-100' },
+  na: { label: 'No job', cls: 'text-slate-500 bg-slate-50 border-slate-200' },
 };
 
 const FLOWS: Record<string, Flow> = {
   'Sales Item Dashboard': {
     automated: true,
-    tasks: ['nutriobox-daily-data-v2 (Playwright automation)'],
+    tasks: ['NutrioBox-DailyData-AM/PM (Playwright)'],
     schedule: 'Every day at 4:00 AM & 4:00 PM IST',
+    migration: { status: 'playwright', note: 'Cut over 17 Aug 2026 — automation/daily_data.py' },
     nodes: [
       { stage: 'WINDOWS TASK SCHEDULER (office laptop)',
         detail: ['Runs automatically twice a day.', '4:00 AM → yesterday, full day', '4:00 PM → today so far (8 AM–4 PM)'],
@@ -281,6 +305,7 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['NutrioBox-OfferTracker (Playwright script)', 'nutriobox-discount-report-daily-upload'],
     schedule: 'Every day — report 4:00 AM, site upload ~5:00 AM IST',
+    migration: { status: 'playwright', note: 'Report generation on Node + Playwright; the 5 AM upload step remains a Cowork task' },
     nodes: [
       { stage: 'DAILY JOB STARTS (4:00 AM)',
         detail: ['Runs on the office laptop as a plain script — nothing needs to be open', 'Rule: only today’s freshly-collected data may be sent, ever'],
@@ -312,14 +337,15 @@ const FLOWS: Record<string, Flow> = {
 
   'Delay Dashboard': {
     automated: true,
-    tasks: ['nutriobox-weekly-delay-dashboard'],
+    tasks: ['NutrioBox-Delay-Weekly (Playwright)'],
     schedule: 'Every Wednesday at 6:00 AM IST',
+    migration: { status: 'playwright', note: 'Cut over 20 Aug 2026 — automation/delay_dashboard.py' },
     nodes: [
       { stage: 'WEEKLY JOB STARTS (Wed 6 AM)',
-        detail: ['Works out the last completed Mon–Sun week and its sheet tab name'],
+        detail: ['Runs on the office laptop as a plain script — nothing needs to be open', 'Works out the last completed Mon–Sun week and its sheet tab name', 'If the week is already present it exits without re-doing the work'],
         edge: '' },
       { stage: 'READ THE DELAY GOOGLE SHEET',
-        detail: ['Confirms that week’s tab actually exists (mandatory check)', 'Reads the delay columns (T / U / V / W) for all 10 outlets'],
+        detail: ['Confirms that week’s tab actually exists (mandatory check)', 'Reads the delay columns (T / U / V / W) for all 10 outlets', 'Cross-checks the browser read against a second independent source — if they disagree, it stops'],
         edge: '' },
       { stage: 'APPEND THE WEEK',
         detail: ['Adds the new week to the delay dashboard file', 'Two identical copies kept in sync (checksum must match)'],
@@ -336,6 +362,7 @@ const FLOWS: Record<string, Flow> = {
     automated: false,
     tasks: [],
     schedule: 'Internal page (no scheduled data job)',
+    migration: { status: 'na', note: 'No scheduled data job — nothing to migrate' },
     nodes: [
       { stage: 'INTERNAL PAGE',
         detail: ['No scheduled data job feeds this tile', 'The content is served by the website itself'],
@@ -347,8 +374,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Ratings': {
     automated: true,
-    tasks: ['NutrioBox-Ratings-Weekly (Playwright automation)'],
+    tasks: ['NutrioBox-Ratings-Weekly (Playwright)'],
     schedule: 'Every Monday at 6:00 AM IST',
+    migration: { status: 'playwright', note: 'Cut over — automation/ratings.py' },
     nodes: [
       { stage: 'WEEKLY JOB STARTS (Mon 6:00 AM)',
         detail: ['Runs on the office laptop as a plain script — nothing needs to be open', 'Loads the current ratings as a baseline first', 'If a source fails later, that outlet keeps its previous value (never blanked)'],
@@ -369,6 +397,7 @@ const FLOWS: Record<string, Flow> = {
     automated: false,
     tasks: [],
     schedule: 'Live monitor (no scheduled data job)',
+    migration: { status: 'na', note: 'Live device state — no scheduled job to migrate' },
     nodes: [
       { stage: 'LIVE MONITOR',
         detail: ['No scheduled job — reflects real-time device state', 'All 9 outlets, broken down hour by hour'],
@@ -382,6 +411,7 @@ const FLOWS: Record<string, Flow> = {
     automated: true,
     tasks: ['vehicle_report.py (Windows Task Scheduler)'],
     schedule: 'Every evening (~7–8 PM IST)',
+    migration: { status: 'na', note: 'Already off Claude — OneLap is a plain HTTP API, so there is no browser step to migrate' },
     nodes: [
       { stage: 'EVENING JOB STARTS (~7–8 PM)',
         detail: ['A scheduled job runs on the office laptop each evening, after routes finish.', 'It logs into OneLap — the GPS system fitted in the delivery vehicles.'],
@@ -406,8 +436,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Daily Dashboard': {
     automated: true,
-    tasks: ['petpooja-sales-to-gsheet'],
-    schedule: 'Every day at ~10:30 AM IST',
+    tasks: ['NutrioBox-DailySheet (Playwright)'],
+    schedule: 'Every day at 10:45 AM IST',
+    migration: { status: 'playwright', note: 'Cut over 5 Sep 2026 — automation/daily_sheet.py (Claude twin petpooja-sales-to-gsheet disabled). Row-targeting off-by-one fixed 7 Sep (now confirms the column-A date label on the live sheet before writing); re-validate headed on the laptop.' },
     nodes: [
       { stage: 'DAILY JOB STARTS (~10:30 AM)',
         detail: ['Works out yesterday’s date, the weekday tab, and the target row'],
@@ -426,8 +457,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Weekly Dashboard': {
     automated: true,
-    tasks: ['weekly-petpooja-sales-report', 'petpooja-weekly-sales-sync', 'weekly-petpooja-dining-delivery-update'],
+    tasks: ['weekly-petpooja-sales-report (Claude)', 'NutrioBox-WeeklySales (Playwright)', 'weekly-petpooja-dining-delivery-update (Claude)'],
     schedule: 'Wednesday 3:00 AM (main) + Monday jobs',
+    migration: { status: 'pending', note: 'Partly ported: the per-outlet total-sales sync IS on Playwright (NutrioBox-WeeklySales, cut over 5 Sep — automation/weekly_sales_sync.py). The big Wed 3 AM report (columns D–AU, Petpooja+Zomato+Swiggy) and the Monday dining/delivery % top-up are the largest remaining Claude items.' },
     nodes: [
       { stage: 'MAIN WEEKLY JOB (Wed 3 AM)',
         detail: ['Finds the last complete Mon–Sun week', 'Opens/creates its tab and clears the area it will fill'],
@@ -454,8 +486,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Daily KOT Comparison': {
     automated: true,
-    tasks: ['daily-kot-comparison'],
-    schedule: 'Every day at 5:10 AM IST',
+    tasks: ['NutrioBox-KOT-Daily (Playwright)'],
+    schedule: 'Every day at 5:15 AM IST',
+    migration: { status: 'playwright', note: 'Cut over 5 Sep 2026 — automation/kot_daily.py (Claude twin daily-kot-comparison disabled); validated 4 Sep' },
     nodes: [
       { stage: 'DAILY JOB STARTS (5:10 AM)',
         detail: ['KOT = Kitchen Order Ticket (one per order)', 'Compares total KOTs vs Captain-App KOTs, per outlet', 'Target = yesterday'],
@@ -479,8 +512,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Weekly KOT Comparison': {
     automated: true,
-    tasks: ['kot-comparsion'],
-    schedule: 'Every Monday at ~11:06 AM IST',
+    tasks: ['NutrioBox-KOT-Weekly (Playwright)'],
+    schedule: 'Every Monday at ~11:20 AM IST',
+    migration: { status: 'playwright', note: 'Cut over 5 Sep 2026 — automation/kot_weekly.py (Claude twin kot-comparsion disabled)' },
     nodes: [
       { stage: 'WEEKLY JOB STARTS (Mon 11:06 AM)',
         detail: ['Computes the last completed Mon–Sun week (1 PM–1 PM window)'],
@@ -498,8 +532,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Monthly KOT Comparison': {
     automated: true,
-    tasks: ['monthly-kot-comparison'],
-    schedule: 'On the 1st of each month at ~11:00 AM IST',
+    tasks: ['NutrioBox-KOT-Monthly (Playwright)'],
+    schedule: 'On the 1st of each month at 12:30 PM IST',
+    migration: { status: 'playwright', note: 'Cut over 5 Sep 2026 — automation/kot_monthly.py (Claude twin monthly-kot-comparison disabled)' },
     nodes: [
       { stage: 'MONTHLY JOB STARTS (1st, 11:00 AM)',
         detail: ['Works out the previous calendar month and tab name (e.g. “July 2026”)'],
@@ -517,8 +552,9 @@ const FLOWS: Record<string, Flow> = {
 
   'Momos Weekly Performance': {
     automated: true,
-    tasks: ['nutriobox-momos-dashboard--weekly-update-higgsfield'],
-    schedule: 'Every Monday at ~5:45 AM IST',
+    tasks: ['NutrioBox-Momos-Weekly (Playwright)'],
+    schedule: 'Every Monday at 6:15 AM IST',
+    migration: { status: 'playwright', note: 'Cut over 5 Sep 2026 — automation/momos_weekly.py (Claude twin disabled). Watch: the Petpooja S3 report export has been 403-ing (refresh the Petpooja session).' },
     nodes: [
       { stage: 'WEEKLY JOB STARTS (Mon 5:45 AM)',
         detail: ['Determines the last completed Mon–Sun week'],
@@ -606,7 +642,7 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Delay Dashboard': {
-    stack: 'Cowork task · Google Sheets gviz CSV · HTML data-array edit · Supabase · Next.js',
+    stack: 'Windows Task Scheduler Wed 06:00 · Python 3 + Playwright (persistent profile) · Google Sheets gviz CSV · HTML data-array edit · Supabase · Next.js',
     nodes: [
       { stage: 'TRIGGER — Cowork task',
         detail: ['nutriobox-weekly-delay-dashboard, cron 0 6 * * 3 (Wed 6 AM)'],
@@ -692,16 +728,16 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Daily Dashboard': {
-    stack: 'Cowork task · Petpooja DOM · Google Sheets · DashboardNav gid map',
+    stack: 'Windows Task Scheduler daily 10:45 · Playwright (persistent profile) · Petpooja dashboard JSON · BrowserWriter (Sheets .xlsx UI) · gviz read-back · DashboardNav gid map',
     nodes: [
-      { stage: 'TRIGGER — Cowork task',
-        detail: ['petpooja-sales-to-gsheet, cron 30 10 * * * (10:30 IST)', 'targets the Windows Chrome deviceId (not macOS)'],
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['NutrioBox-DailySheet → run_daily_sheet.bat → daily_sheet.py, daily 10:45 IST', 'Cut over 5 Sep 2026; Cowork twin petpooja-sales-to-gsheet DISABLED'],
         edge: '' },
-      { stage: 'READ — Petpooja dashboard (DOM)',
-        detail: ['billing.petpooja.com/users/dashboard; jQuery daterangepicker → yesterday, List view', 'per-outlet <tr>/<td>; online-sales kebab tooltip → Zomato/Swiggy'],
+      { stage: 'READ — dashboard_scrape.scrape_daily() (JSON, not DOM)',
+        detail: ['In-page fetch of /users/load_restaurants_wise_data/ → per-outlet total/orders/net', '+ /users/load_sales_statistics/ → t_net, t_o (online), o_t_z, o_t_s, total_discount, total_orders', 'online%/discount% ÷ total_sales (matches the card); old daterangepicker+kebab DOM scrape retired'],
         edge: '' },
-      { stage: 'WRITE — Google Sheet',
-        detail: ['Sheet 1r9u4DMs…vqs, weekday tab (DAY_GIDS)', 'B–K=10 outlets; L=SUM, N=round(NetSales), O=N/L, S=(L*0.95)/R, U=100−T'],
+      { stage: 'WRITE — BrowserWriter (.xlsx via Name Box + keyboard)',
+        detail: ['Sheet 1r9u4DMs…vqs, weekday tab; B–K=10 outlets; L=SUM, N=round(Net), O=N/L, S=(L*0.95)/R, U=100−T', 'Guard E (7 Sep): confirms column-A date label on the LIVE sheet before typing, self-corrects one row', '↳ fixes the gviz-index vs true-row off-by-one that on 6 Sep wrote 5-Sep data into the 29-Aug row', 'read-back verify now cache-busts the gviz export'],
         edge: '' },
       { stage: 'SERVE — DashboardNav',
         detail: ['buildDailyUrl(): gid by IST weekday → opens Google Sheet'] },
@@ -709,10 +745,10 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Weekly Dashboard': {
-    stack: 'Cowork tasks (×3) · Petpooja/Zomato/Swiggy reports · openpyxl · Apps Script · DashboardNav',
+    stack: 'Mixed — 1 Playwright (Windows) + 2 Cowork · Petpooja/Zomato/Swiggy reports · openpyxl · Apps Script · DashboardNav',
     nodes: [
-      { stage: 'TRIGGERS — Cowork tasks',
-        detail: ['weekly-petpooja-sales-report: cron 0 3 * * 3 (Wed 3 AM)', 'petpooja-weekly-sales-sync: 30 12 * * 1', 'weekly-petpooja-dining-delivery-update: 0 8 * * 1'],
+      { stage: 'TRIGGERS — 1 cut over, 2 still on Claude',
+        detail: ['NutrioBox-WeeklySales (Playwright, Mon 12:15) → weekly_sales_sync.py — per-outlet total sales; CUT OVER 5 Sep (twin petpooja-weekly-sales-sync disabled)', 'weekly-petpooja-sales-report (Claude): cron 0 3 * * 3 (Wed 3 AM) — the big D–AU report, NOT yet ported', 'weekly-petpooja-dining-delivery-update (Claude): 0 8 * * 1 — dining/delivery %, NOT yet ported'],
         edge: '' },
       { stage: 'SOURCES → SHEET COLUMNS',
         detail: ['PetPooja Sub-Order Wise → D–S', 'PetPooja KOT delivery-time → T–W', 'Zomato funnel → X–AH; Swiggy business-metrics xlsx (openpyxl) → AI–AR', 'Weekly KOT sheet → AS–AU'],
@@ -726,10 +762,10 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Daily KOT Comparison': {
-    stack: 'Cowork task · Petpooja HTTP · Google Sheets · Supabase pointer JSON · DashboardNav runtime fetch',
+    stack: 'Windows Task Scheduler daily 05:15 · Playwright (persistent profile) · Petpooja KOT/Captain · Google Sheets · Supabase pointer JSON · DashboardNav runtime fetch',
     nodes: [
-      { stage: 'TRIGGER — Cowork task',
-        detail: ['daily-kot-comparison, cron 0 5 * * * (5:10 IST); ≤80 tool calls'],
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['NutrioBox-KOT-Daily → kot_daily.py, daily 05:15 IST', 'Cut over 5 Sep 2026; Cowork twin daily-kot-comparison DISABLED', 'reader drives the browser: switch outlet → dashboard → KOT klist (kot_common.py)'],
         edge: '' },
       { stage: 'READ — Petpooja',
         detail: ['KOT: items/kot_list, order_type[2,3] → "Showing 1..of N records"', 'Captain: custom_reports/view_report/27 → Total "No of Kots"', '9 outlets (config.KOT_OUTLETS)'],
@@ -746,10 +782,10 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Weekly KOT Comparison': {
-    stack: 'Cowork task · Petpooja HTTP · Google Sheets · Supabase pointer JSON · DashboardNav',
+    stack: 'Windows Task Scheduler Mon 11:20 · Playwright (persistent profile) · Petpooja KOT/Captain · Google Sheets · Supabase pointer JSON · DashboardNav',
     nodes: [
-      { stage: 'TRIGGER — Cowork task',
-        detail: ['kot-comparsion, cron 0 11 * * 1 (Mon ~11:06)'],
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['NutrioBox-KOT-Weekly → kot_weekly.py, Mon 11:20 IST', 'Cut over 5 Sep 2026; Cowork twin kot-comparsion DISABLED (shares kot_common.py with the daily job)'],
         edge: '' },
       { stage: 'READ — Petpooja (9 outlets)',
         detail: ['KOT items/kot_list order_type[2,3]; Captain view_report/27', 'window [Mon 13:00 → Mon 13:00)'],
@@ -763,10 +799,10 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Monthly KOT Comparison': {
-    stack: 'Cowork task · Petpooja HTTP · Google Sheets · DashboardNav',
+    stack: 'Windows Task Scheduler 1st 12:30 · Playwright (persistent profile) · Petpooja KOT/Captain · Google Sheets · DashboardNav',
     nodes: [
-      { stage: 'TRIGGER — Cowork task',
-        detail: ['monthly-kot-comparison, cron 0 11 1 * * (1st, 11:00)'],
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['NutrioBox-KOT-Monthly → kot_monthly.py, 1st of month 12:30 IST', 'Cut over 5 Sep 2026; Cowork twin monthly-kot-comparison DISABLED'],
         edge: '' },
       { stage: 'READ — Petpooja (9 outlets)',
         detail: ['KOT items/kot_list order_type[2,3]; Captain view_report/27', 'window [1st→1st) of the ended month'],
@@ -780,10 +816,10 @@ const TECH: Record<string, { stack?: string; nodes: FlowNode[] }> = {
   },
 
   'Momos Weekly Performance': {
-    stack: 'Cowork task · Petpooja CSV · Higgsfield app (git) · self-hosted static HTML',
+    stack: 'Windows Task Scheduler Mon 06:15 · Playwright (persistent profile) · Petpooja CSV · self-hosted static HTML (git→Vercel)',
     nodes: [
-      { stage: 'TRIGGER — Cowork task',
-        detail: ['nutriobox-momos-dashboard--weekly-update-higgsfield, cron 45 5 * * 1'],
+      { stage: 'TRIGGER — Windows Task Scheduler',
+        detail: ['NutrioBox-Momos-Weekly → momos_weekly.py --publish, Mon 06:15 IST', 'Cut over 5 Sep 2026; Cowork twin nutriobox-momos-dashboard--…-higgsfield DISABLED', '⚠ watch: Petpooja S3 order-export has been 403-ing (refresh_tokens.py --login)'],
         edge: '' },
       { stage: 'SOURCE — Petpooja CSV',
         detail: ['Order Summary Item (10 outlets)', 'filter 6 Whole Wheat Momos SKUs; veg rule: startsWith("Chicken") ⇒ Nonveg', 'aggregate sales/units/orders/AOV per outlet + variant'],
@@ -966,7 +1002,16 @@ function WorkflowModal({
               >
                 {flow.automated ? 'Automated' : 'Live / manual'}
               </span>
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                  MIGRATION_BADGE[flow.migration.status].cls
+                }`}
+                title={flow.migration.note}
+              >
+                {MIGRATION_BADGE[flow.migration.status].label}
+              </span>
             </div>
+            <div className="mt-1 text-[11.5px] text-slate-500">{flow.migration.note}</div>
             <div className="mt-1.5 flex items-center gap-1.5 text-[13px] font-medium text-brand-700">
               <ClockIcon />
               <span>{flow.schedule}</span>

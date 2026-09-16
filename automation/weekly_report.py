@@ -142,21 +142,47 @@ def pull_suborder(mon: date, sun: date, headless: bool) -> dict:
     report id is confirmed, then parse with the BeautifulSoup logic below. Until the
     id is confirmed this raises so the job can never write a half-built row.
     """
-    from_dt = f"{mon.isoformat()} 00:00:00"
-    to_dt = f"{sun.isoformat()} 23:59:59"
-    if SUBORDER_VIEW_ID is None and not SUBORDER_VIA_EXCEL:
-        raise NotImplementedError(
-            "pull_suborder: set SUBORDER_VIEW_ID (or SUBORDER_VIA_EXCEL=True) after "
-            "confirming the Sub-Order Wise export on the laptop — see header VALIDATE #1.")
+    import csv as _csv
+    from pathlib import Path
+    from browser_export import export_order_csv
 
-    from browser_export import browser_custom_report
-    from bs4 import BeautifulSoup
+    out_dir = Path(__file__).resolve().parent / "outputs"
+    name2key = {name: key for key, _r, _pp, _z, _s, name, *_ in OUTLETS}
+    orders_by_name = {name: {} for name in name2key}      # name -> {invoice: order-row}
+
+    day = mon
+    while day <= sun:
+        ds = day.isoformat()
+        cached = out_dir / f"Order_Summary_Item_Report_{ds}_1.csv"
+        path = cached if cached.exists() else export_order_csv(ds, out_dir, tag="1", headless=headless)
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for r in _csv.DictReader(fh):
+                rn = (r.get("restaurant_name") or "").strip()
+                if rn not in name2key:
+                    continue
+                if (r.get("status") or "").strip().lower() != "success":
+                    continue
+                orders_by_name[rn].setdefault(r.get("invoice_no"), r)   # once per bill
+        day += timedelta(days=1)
+
+    def num(o, k):
+        return _r2(re.sub(r"[^0-9.\-]", "", str(o.get(k) or 0)) or 0)
+
+    def sale(o):
+        return num(o, "my_amount") - num(o, "discount") + num(o, "container_charge")
+
     out = {}
-    for key, _row, pp_id, *_rest in OUTLETS:
-        html = browser_custom_report(SUBORDER_VIEW_ID, pp_id, from_dt, to_dt, headless=headless)
-        soup = BeautifulSoup(html, "html.parser")
-        rows = _suborder_rows(soup)          # list of dicts per bill/sub-row
-        out[key] = _fold_suborder(rows)
+    for key, _r, _pp, _z, _s, name, *_ in OUTLETS:
+        orders = list(orders_by_name[name].values())
+        zom = [o for o in orders if (o.get("area") or "").strip().lower() == "zomato"]
+        swi = [o for o in orders if (o.get("area") or "").strip().lower().startswith("swiggy")]
+        D = len(orders); E = _r2(sum(sale(o) for o in orders))
+        L = len(zom); M = _r2(sum(sale(o) for o in zom))
+        P = len(swi); Q = _r2(sum(sale(o) for o in swi))
+        F = L + P; G = _r2(M + Q); J = D - F; K = _r2(E - G)
+        pct = lambda a, b: _r2(a / b * 100) if b else 0.0
+        out[key] = dict(D=D, E=E, F=F, G=G, H=pct(F, D), I=pct(G, E), J=J, K=K,
+                        L=L, M=M, N=pct(L, F), O=pct(M, G), P=P, Q=Q, R=pct(P, F), S=pct(Q, G))
     return out
 
 
@@ -250,15 +276,102 @@ def _fold_suborder(rows: list[dict]) -> dict:
 # ------------------------------------------------------------------------------
 # SOURCE 2 — Petpooja KOT delivery-time  -> T..W
 # ------------------------------------------------------------------------------
+_KLIST_DELIVERY_JS = r"""
+async ([oid, start, end, delivery, page]) => {
+  const b = new URLSearchParams();
+  b.append('data[Kot][startdate]', start);
+  b.append('data[Kot][enddate]', end);
+  b.append('data[Kot][kot_id]',''); b.append('data[Kot][customer_name]','');
+  b.append('data[Kot][customer_phone]',''); b.append('data[Kot][table_no]','');
+  b.append('data[restaurant_id]', String(oid));
+  b.append('data[current_page_url]', location.origin + '/items/kot_list/');
+  b.append('data[Kot][order_type][]', delivery);
+  let resp;
+  try {
+    resp = await fetch(location.origin + '/items/klist/page:' + (page||1), {
+      method:'POST', credentials:'include',
+      headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},
+      body: b.toString() });
+  } catch(e){ return {err:'fetch '+e}; }
+  const t = await resp.text();
+  if (t.trim()==='9') return {sentinel:true};
+  if (/UserLoginForm|\/users\/login/.test(t)) return {loggedOut:true};
+  const doc = new DOMParser().parseFromString(t, 'text/html');
+  let otIdx=-1, cdIdx=-1, rows=[];
+  for (const tb of doc.querySelectorAll('table')) {
+    const hs=[...tb.querySelectorAll('th')].map(x=>(x.textContent||'').trim());
+    otIdx = hs.findIndex(h=>/order\s*type/i.test(h));
+    cdIdx = hs.findIndex(h=>/complete\s*duration/i.test(h));
+    if (cdIdx<0) continue;
+    for (const tr of tb.querySelectorAll('tr')) {
+      const tds=[...tr.querySelectorAll('td')].map(x=>(x.textContent||'').replace(/\s+/g,' ').trim());
+      if (tds.length<=cdIdx) continue;
+      rows.push({kot: tds[0], ot: otIdx>=0?tds[otIdx]:'', dur: tds[cdIdx]});
+    }
+    break;
+  }
+  return {rows: rows};
+}
+"""
+
+
 def pull_kot_delivery(mon: date, sun: date, headless: bool) -> dict:
     """
-    Per outlet: count Delivery orders whose Complete Duration is 15-25 min (T) and
-    26+ min (V), and their % of total deliveries (U, W). Window = last-Mon 01:00 ->
-    this-Mon 01:00 (business day). VALIDATE (header #2): confirm items/kot_list
-    export still returns Order Type + Complete Duration.
+    Per outlet T..W: Delivery orders whose Complete Duration is 15-25 min (T) and
+    26+ min (V), plus their % of total deliveries (U, W). Window = week's Monday
+    01:00 -> the following Monday 01:00 (Petpooja's business-day boundary).
+
+    Reads items/klist (Order Type + Complete Duration — confirmed live 16 Sep),
+    paginating with CakePHP `page:N`. A KOT-ID `seen` set makes it self-correcting:
+    if pagination ever loops (returns a page already read), it stops instead of
+    double-counting or spinning.
     """
-    raise NotImplementedError(
-        "pull_kot_delivery: port items/kot_list export + duration parse (VALIDATE #2)")
+    from playwright.sync_api import sync_playwright
+    from browser_export import PROFILE_DIR, _prime_kot_page, _is_logged_out
+    from petpooja import SessionExpired
+
+    def kfmt(d: date) -> str:
+        return f"{d.day} {d.strftime('%b %Y')} 01:00:00"
+
+    kot_from, kot_to = kfmt(mon), kfmt(sun + timedelta(days=1))
+    delivery = config.ORDER_TYPE_DELIVERY
+    out = {}
+    with sync_playwright() as p:
+        ctx = p.chromium.launch_persistent_context(
+            user_data_dir=str(PROFILE_DIR), headless=headless,
+            args=["--disable-blink-features=AutomationControlled"])
+        try:
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            _prime_kot_page(page, ctx, OUTLETS[0][2])
+            if _is_logged_out(page):
+                raise SessionExpired("Petpooja logged out — run refresh_tokens.py --login")
+            for key, _row, pp_id, *_ in OUTLETS:
+                ctx.request.post(config.PETPOOJA_BASE + "/",
+                                 form={"header_changed_rest_id": str(pp_id)})
+                page.wait_for_timeout(1_200)
+                durations, seen = [], set()
+                for pg in range(1, 61):                 # hard cap 60 pages (~900 KOTs)
+                    res = page.evaluate(_KLIST_DELIVERY_JS,
+                                        [pp_id, kot_from, kot_to, delivery, pg])
+                    if res.get("loggedOut"):
+                        raise SessionExpired("Petpooja logged out — run refresh_tokens.py --login")
+                    rows = res.get("rows") or []
+                    fresh = [r for r in rows if r.get("kot") and r["kot"] not in seen]
+                    if not fresh:
+                        break                           # exhausted (or pagination looped)
+                    for r in fresh:
+                        seen.add(r["kot"])
+                        if "delivery" not in str(r.get("ot", "")).lower():
+                            continue
+                        m = _parse_duration_min(r.get("dur"))
+                        if m is not None:
+                            durations.append(m)
+                    if len(rows) < 15:                  # last (short) page
+                        break
+                out[key] = fold_kot_delivery(durations)
+        finally:
+            ctx.close()
+    return out
 
 
 def _parse_duration_min(s: str):

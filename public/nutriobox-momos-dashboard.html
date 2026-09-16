@@ -41,7 +41,7 @@ html,body{margin:0;padding:0}
 .dash .axr{fill:#c2830c;font-size:9.5px}
 .dash .axttlL{fill:#6366f1;font-size:10px;font-weight:600}
 .dash .axttlR{fill:#c2830c;font-size:10px;font-weight:600}
-.dash .chartwrap{position:relative}
+.dash .chartwrap{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 .dash .hit{cursor:pointer}
 .dash svg .hit:hover{fill:rgba(99,102,241,.06)}
 .dash .tt{position:absolute;pointer-events:none;opacity:0;transition:opacity .08s ease;background:#0f172a;color:#fff;font-size:11px;line-height:1.4;padding:7px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,.28);white-space:nowrap;z-index:5;transform:translate(-50%,-100%)}
@@ -178,7 +178,8 @@ let mOutlet="sales", mVN="sales", mNV="sales", mV="sales";
 function trendSVG(){
   const salesMax=Math.max(...D.weekly.sales), unitsMax=Math.max(...D.weekly.units);
   const GN=5, salesTop=Math.ceil((salesMax*1.08)/500000)*500000, unitsTop=Math.ceil(unitsMax/500)*500;
-  const R0=702,L0=58,T0=26,B0=244,PW=760,PH=300;
+  const L0=58,T0=26,B0=244,PH=300,PERWK=90;
+  const R0=L0+PERWK*D.weekLabels.length, PW=R0+58;
   const band=(R0-L0)/D.weekLabels.length, barW=Math.min(38,band*0.42);
   const yS=v=>B0-(v/salesTop)*(B0-T0), yU=v=>B0-(v/unitsTop)*(B0-T0), cx=i=>L0+band*i+band/2;
   let g="";
@@ -198,7 +199,7 @@ function trendSVG(){
   const titles=`<text x="16" y="${midY}" text-anchor="middle" transform="rotate(-90 16 ${midY})" class="axttlL">Sales (₹)</text>`
     +`<text x="${R0+40}" y="${midY}" text-anchor="middle" transform="rotate(90 ${R0+40} ${midY})" class="axttlR">Units sold</text>`;
   let hit=""; D.weekLabels.forEach((lab,i)=>{ hit+=`<rect class="hit" x="${L0+band*i}" y="${T0}" width="${band}" height="${B0-T0}" fill="transparent" data-i="${i}"/>`; });
-  return `<svg viewBox="0 0 ${PW} ${PH}" width="100%" role="img" style="display:block">${g}${titles}${bars}`
+  return `<svg viewBox="0 0 ${PW} ${PH}" width="100%" role="img" style="display:block;min-width:${PW}px">${g}${titles}${bars}`
     +`<polyline points="${pts}" fill="none" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`;
 }
 

@@ -92,6 +92,14 @@ KOT_DEST_METRIC_LABELS = ["Total KOT", "Captain App KOT", "Captain App%"]
 
 KOT_WEEKLY_SHEET_ID = "1eFBNV1bAwXqATegto9k0S2N9KfCGAtyufmbkpbzQX30"
 
+# Weekly ("kot-comparsion") and monthly ("monthly-kot-comparison") both write ONE
+# tab per period into their own sheet — outlets down column A (rows 2-10, same
+# order/tokens as the daily source), B = Total Dine In/Pick Up KOT, C = Captain
+# App KOT, D = coverage formula, row 11 = TOTAL. Unlike the daily task they do NOT
+# mirror into the "Sales Data" workbook, and A1 is an "Outlets" header (never
+# overwritten). See kot_weekly.py / kot_monthly.py (shared logic in kot_common.py).
+KOT_MONTHLY_SHEET_ID = "1TFCNxjX_0AGV2t2fkK_KzCMf3W9uMdSdVGbVB7_Nofw"
+
 # ---------------------------------------------------------------------------
 # Petpooja report ids (reference only — the client derives them from the page)
 # ---------------------------------------------------------------------------
@@ -112,7 +120,10 @@ ORDER_TYPE_DINEIN = "3"
 # ---------------------------------------------------------------------------
 SUPABASE_PROJECT = "jkzremlkrxhhshqouudk"
 SUPABASE_PUBLIC = f"https://{SUPABASE_PROJECT}.supabase.co/storage/v1/object/public/reports"
-DASHBOARD_URL = "https://operationsdashboard.nutriobox.com"
+# NOTE (2026-08-20): the custom domain is `opsdashboard`, not
+# `operationsdashboard` — the latter has no DNS record in Wix and returns
+# NXDOMAIN, which silently broke ratings.py's API_RATINGS call.
+DASHBOARD_URL = "https://opsdashboard.nutriobox.com"
 
 # ---------------------------------------------------------------------------
 # Known-good values, captured live from Petpooja on 14 Jul 2026.

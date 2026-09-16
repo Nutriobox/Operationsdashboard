@@ -34,6 +34,15 @@ import tempfile
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+# Windows console defaults to cp1252, which cannot encode characters like the
+# rupee sign (₹). Force UTF-8 on stdout/stderr so summary prints never crash
+# the run (previously raised UnicodeEncodeError at the end of a successful build).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # config is only needed for the live Petpooja pull; keep the build path importable
 # anywhere (offline --csv testing) even when config/playwright are absent.
 try:

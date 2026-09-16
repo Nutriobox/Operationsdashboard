@@ -117,7 +117,15 @@ def login_flow():
             pg.goto(url, wait_until="domcontentloaded")
             print(f"  - {name}: {url}")
         input("\nSign in to all three, then press Enter here... ")
-        ctx.close()
+        # If you closed the browser window yourself before pressing Enter, the
+        # context is already gone and close() raises TargetClosedError. That
+        # used to abort the whole run BEFORE harvest() — losing the sign-in you
+        # just did. The profile is written to disk continuously, so a closed
+        # window is harmless: swallow it and carry on to the harvest.
+        try:
+            ctx.close()
+        except Exception as e:
+            print(f"  (browser was already closed: {type(e).__name__} — continuing)")
     print("\nProfile saved. Harvesting tokens...\n")
 
 

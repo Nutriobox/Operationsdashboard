@@ -2,3 +2,7 @@ secrets/
 logs/
 __pycache__/
 *.pyc
+.env
+outputs/
+*.bak
+*.bak-*

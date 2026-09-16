@@ -493,6 +493,47 @@ def build_row(key, sub, kot, zom, swi, cap) -> list:
     return [merged.get(f, "") for f in FIELD_ORDER]
 
 
+# --- SPLIT MODE (default) -----------------------------------------------------
+# The Zomato (X..AH) and Swiggy (AI..AR) funnels bot-gate the headless automation
+# browser (the partner SPAs render blank / emit no data API), so they stay on the
+# Claude twin. This Playwright job writes ONLY the columns it can source reliably:
+#   D..W   = Petpooja Sub-Order (D..S) + KOT delivery-time (T..W)  [contiguous]
+#   AS..AU = Captain-App KOT                                        [contiguous]
+# X..AR are never touched here, so this job and the twin write disjoint columns
+# of the same rows and cannot clobber each other.
+DW_FIELDS = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+             "Q", "R", "S", "T", "U", "V", "W"]
+ASU_FIELDS = ["AS", "AT", "AU"]
+_DW_PCT = {"H", "I", "N", "O", "R", "S", "U", "W"}
+
+
+def build_dw(key, sub, kot) -> list:
+    m = {**sub[key], **kot[key]}
+    return [m.get(f, "") for f in DW_FIELDS]
+
+
+def build_asu(key, cap) -> list:
+    return [cap[key].get(f, "") for f in ASU_FIELDS]
+
+
+def verify_split(dw: dict) -> list[str]:
+    """Cross-checks on the D..W block only: F=L+P, J=D-F, percents in range."""
+    errs = []
+    idx = {f: i for i, f in enumerate(DW_FIELDS)}
+    for key, _row, *_x in OUTLETS:
+        v = dw[key]
+        g = lambda f: v[idx[f]]
+        if g("F") != (g("L") + g("P")):
+            errs.append(f"{key}: F({g('F')}) != L({g('L')})+P({g('P')})")
+        if g("J") != (g("D") - g("F")):
+            errs.append(f"{key}: J({g('J')}) != D({g('D')})-F({g('F')})")
+        for f in _DW_PCT:
+            val = g(f)
+            if isinstance(val, (int, float)) and not (0 <= val <= 100):
+                errs.append(f"{key}.{f} = {val} out of 0-100")
+    return errs
+
+
 # Columns that hold a percentage (must land in 0..100). Explicit list — do NOT
 # derive by suffix, or count columns like AH/AI/AN get mis-flagged.
 PCT_COLS = {"H", "I", "N", "O", "R", "S", "U", "W",
@@ -547,49 +588,50 @@ def main() -> int:
     print(f"target week : {mon} .. {sun}")
     print(f"target tab  : {tab!r}")
 
-    # ---- pull every source (any raise = abort, nothing written) ----
+    print("mode        : SPLIT — writes D..W + AS..AU (Petpooja + Captain); "
+          "Zomato X..AH and Swiggy AI..AR stay on the Claude twin.")
+
+    # ---- pull the sources this job owns (any raise = abort, nothing written) ----
     sub = pull_suborder(mon, sun, headless)
     kot = pull_kot_delivery(mon, sun, headless)
-    zom = pull_zomato_funnel(mon, sun, headless)
-    swi = pull_swiggy_funnel(mon, sun, headless)
     cap = pull_captain(mon, sun)
 
-    rows = {key: build_row(key, sub, kot, zom, swi, cap) for key, *_ in OUTLETS}
+    dw = {key: build_dw(key, sub, kot) for key, *_ in OUTLETS}
+    asu = {key: build_asu(key, cap) for key, *_ in OUTLETS}
 
-    problems = verify(rows)
+    problems = verify_split(dw)
     if problems:
         print("\nVERIFY FAILED — nothing written:")
-        for p in problems:
-            print("  -", p)
+        for pb in problems:
+            print("  -", pb)
         return 1
     print("verify      : OK (F=L+P, J=D-F, percents in range)")
 
     for key, row_no, *_x in OUTLETS:
-        vals = rows[key]
-        print(f"  row {row_no:>2} {key:<12} D..AU = {vals[:6]} ... {vals[-3:]}")
+        print(f"  row {row_no:>2} {key:<12} D..W={dw[key][:6]}...{dw[key][-2:]}  AS..AU={asu[key]}")
 
     if args.selftest or args.dry_run:
         print("\n(dry) nothing written.")
         return 0
 
-    # ---- write D..AU per outlet row via the signed-in browser ----
+    # ---- write D..W and AS..AU per outlet row via the signed-in browser ----
     from sheet_writer import BrowserWriter
     with BrowserWriter(headless=headless) as w:
         w.open_book(WEEKLY_REPORT_SHEET_ID)
         if tab not in w.tab_titles():
-            print(f"STOP: tab {tab!r} does not exist — the Wed job creates it by "
-                  "duplicating the newest weekly tab. Create it first, then re-run.")
+            print(f"STOP: tab {tab!r} does not exist — create it first "
+                  "(duplicate the newest weekly tab), then re-run.")
             return 1
         w.select_tab(tab)
         for key, row_no, *_x in OUTLETS:
-            w.write_rows_down(f"{col_a1(COL_D)}{row_no}", [rows[key]])
-
+            w.write_rows_down(f"D{row_no}", [dw[key]])       # D..W
+            w.write_rows_down(f"AS{row_no}", [asu[key]])     # AS..AU
         grid2 = w.read_tab(tab)
-        # spot-check row 5 (DLF) D and AU landed
         if len(grid2) < 5 or not (grid2[4][COL_D - 1] or "").strip():
             print("VERIFY FAILED: row 5 D read back empty")
             return 1
-    print(f"\nOK — wrote D..AU rows 5..23 on {tab!r}.")
+    print(f"\nOK — wrote D..W + AS..AU rows 5..23 on {tab!r} "
+          "(X..AR left for the Claude funnel twin).")
     return 0
 
 

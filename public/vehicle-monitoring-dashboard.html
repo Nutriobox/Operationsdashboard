@@ -107,6 +107,12 @@
   .tl-head .vname .dot{width:9px;height:9px;border-radius:50%}
   .tl-head .vmeta{font-size:11.5px;color:var(--ink-3)}
   .tl-head .vmeta b{color:var(--ink-2);font-weight:600}
+  .tl-plan{padding:0 20px 10px;font-size:11.5px;color:var(--ink-3)}
+  .tl-plan b{color:var(--ink-2);font-weight:600}
+  .tl-plan .miss{color:#b4552b}
+  td.plan{max-width:150px;font-size:10.5px;color:var(--ink-3)}
+  td.plan.ok{color:#3d7a4f}
+  td.plan.warn{color:#b4552b}
   .tl-scroll{overflow-x:auto;padding:0 8px 6px}
   table.triplog{width:100%;border-collapse:collapse;font-size:11.5px;min-width:1120px}
   table.triplog thead th{text-align:left;font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:#faf9f7}
@@ -371,9 +377,11 @@ const LEGS=DASH_DATA.LEGS;
     const head=`<thead><tr>
       <th>Sr</th><th>Start Destination</th><th>Finished Destination</th><th>Dispatch</th>
       <th>After 30 Min</th><th>After 1 Hr</th><th>After 1½ Hr</th><th>After 2 Hr</th>
-      <th>Outlet Reached</th><th class="r">Total Travel</th><th class="r">At Outlet</th><th>Remarks</th></tr></thead>`;
+      <th>Outlet Reached</th><th class="r">Total Travel</th><th class="r">At Outlet</th><th>Vs Plan</th><th>Remarks</th></tr></thead>`;
     const body='<tbody>'+legs.map((L,i)=>{
-      const[start,fin,disp,c30,c60,c90,c120,reached,travel,halt,rem]=L;
+      const[start,fin,disp,c30,c60,c90,c120,reached,travel,halt,rem,planStatus]=L;
+      const ps=(planStatus||'').split(' · missed:')[0];  // missed drops are shown once, in the header
+      const psClass=/^On plan/.test(ps)?'ok':(/^Unplanned/.test(ps)?'warn':'');
       return `<tr>
         <td class="tnum">${i+1}</td>
         <td class="loc">${start}</td>
@@ -383,12 +391,16 @@ const LEGS=DASH_DATA.LEGS;
         <td class="loc">${reached}</td>
         <td class="r tnum" style="font-weight:600">${travel}</td>
         <td class="r tnum">${halt}</td>
+        <td class="rem plan ${psClass}">${ps||'<span class="dash">–</span>'}</td>
         <td class="rem">${rem}</td></tr>`;}).join('')+'</tbody>';
+    const planned=(v.planned&&v.planned.length)?v.planned.join(' → '):'';
+    const missed=(v.missed&&v.missed.length)?v.missed.join(', '):'';
     return `<div class="tl-block" style="--vc:${v.color}">
       <div class="tl-head">
         <span class="vname"><span class="dot" style="background:${v.color}"></span>${v.name}</span>
-        <span class="vmeta">Vehicle No.: <b>${v.name}</b> &nbsp;·&nbsp; Driver: <b>—</b> &nbsp;·&nbsp; Attendant: <b>—</b> &nbsp;·&nbsp; ${legs.length} legs &nbsp;·&nbsp; ${v.dist.toFixed(1)} km</span>
+        <span class="vmeta">Vehicle No.: <b>${v.reg||v.name}</b> &nbsp;·&nbsp; Tracker: <b>${v.device||v.name}</b> &nbsp;·&nbsp; Driver: <b>${v.driver||'—'}</b> &nbsp;·&nbsp; ${legs.length} legs &nbsp;·&nbsp; ${v.dist.toFixed(1)} km</span>
       </div>
+      ${planned?`<div class="tl-plan">Planned (Pulse): <b>${planned}</b>${missed?` &nbsp;·&nbsp; <span class="miss">not reached: ${missed}</span>`:''}${v.recordedBy?` &nbsp;·&nbsp; checklist filed by ${v.recordedBy}`:''}</div>`:''}
       <div class="tl-scroll"><table class="triplog">${head}${body}</table></div>
     </div>`;
   }).join('');

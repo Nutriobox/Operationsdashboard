@@ -67,7 +67,7 @@ if ($curlOutput -match 'HTTP_STATUS=(\d+)') {
         Log ("Upload succeeded ({0}). Public URL: {1}" -f $status, $publicUrl)
         Log "---- upload-feedback-dashboard finished ----"
         Write-Host ''
-        Write-Host 'DONE. Refresh operationsdashboard.nutriobox.com/dashboard/feedback (hard refresh: Ctrl+F5).'
+        Write-Host 'DONE. Refresh opsdashboard.nutriobox.com/dashboard/feedback (hard refresh: Ctrl+F5).'
         Read-Host 'Press Enter to close'
         exit 0
     } else {

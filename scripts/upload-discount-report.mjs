@@ -54,4 +54,4 @@ const resp = await fetch(url, {
 if (!resp.ok) fail(`Upload failed (HTTP ${resp.status}): ${await resp.text()}`);
 log(`Uploaded successfully.`);
 log(`Live at: ${NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/reports/${objectName}`);
-log(`Dashboard: https://operationsdashboard.nutriobox.com/dashboard/discount-codes  (pick ${date})`);
+log(`Dashboard: https://opsdashboard.nutriobox.com/dashboard/discount-codes  (pick ${date})`);

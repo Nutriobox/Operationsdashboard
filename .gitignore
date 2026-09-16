@@ -19,3 +19,6 @@ tsconfig.tsbuildinfo
 # vehicle report automation
 automation/vehicle_report/vehicle_report_config.py
 reports/
+
+# Local vehicle-monitoring automation (secrets, node_modules, browser profile) — never deploy/commit
+vehicle-monitor/

@@ -58,6 +58,6 @@ echo.
 
 echo =====================================================
 echo  SUCCESS. Railway will redeploy in ~1 minute.
-echo  Refresh operationsdashboard.nutriobox.com after that.
+echo  Refresh opsdashboard.nutriobox.com after that.
 echo =====================================================
 pause

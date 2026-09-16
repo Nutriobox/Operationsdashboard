@@ -41,7 +41,7 @@ echo.
 
 echo =====================================================
 echo  SUCCESS. Railway will redeploy in ~1 minute.
-echo  Then hard-refresh operationsdashboard.nutriobox.com/dashboard/ratings
+echo  Then hard-refresh opsdashboard.nutriobox.com/dashboard/ratings
 echo  (Ctrl+F5).
 echo =====================================================
 pause

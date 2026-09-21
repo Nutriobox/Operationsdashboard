@@ -1,0 +1,60 @@
+# ===========================================================================
+# NutrioBox automation crontab (Ubuntu EC2)
+# Install:  crontab /opt/nutriobox/aws-migration/cron/nutriobox-cron
+# Verify:   crontab -l
+#
+# All times are IST (Asia/Kolkata) via CRON_TZ below — the server itself stays UTC.
+# Every line calls run-job.sh, which activates the venv, logs, and alerts on failure.
+# If the repo is not at /opt/nutriobox, change REPO here AND in run-job.sh.
+# ===========================================================================
+CRON_TZ=Asia/Kolkata
+SHELL=/bin/bash
+REPO=/opt/nutriobox
+RJ=/opt/nutriobox/aws-migration/bin/run-job.sh
+
+# --- sessions: harvest fresh tokens before the morning jobs ---------------
+30 3 * * *    bash $RJ refresh-tokens
+
+# --- daily data + dashboard sales -----------------------------------------
+0  4 * * *    bash $RJ daily-data          # AM export
+0  16 * * *   bash $RJ daily-data          # PM export
+30 9 * * *    bash $RJ sales-deploy        # AM deploy (gzip + Supabase + git push)
+40 16 * * *   bash $RJ sales-deploy        # PM deploy
+
+# --- KOT ------------------------------------------------------------------
+15 5 * * *    bash $RJ kot-daily
+20 11 * * 1   bash $RJ kot-weekly          # Monday
+30 12 1 * *   bash $RJ kot-monthly         # 1st of month
+
+# --- sheets / reports -----------------------------------------------------
+45 10 * * *   bash $RJ daily-sheet
+0  6 * * 1    bash $RJ ratings             # Monday
+0  6 * * 3    bash $RJ delay               # Wednesday
+0  6 * * 1    bash $RJ discount-weekly     # Monday
+15 6 * * 1    bash $RJ momos               # Monday
+0  7 * * 1    bash $RJ monthly-sales-fill  # Monday
+15 12 * * 1   bash $RJ weekly-sales        # Monday
+0  3 * * 3    bash $RJ weekly-report       # Wednesday
+
+# --- incentives -----------------------------------------------------------
+0  5 * * 3    bash $RJ incentive-delay     # Wednesday
+30 15 * * 1   bash $RJ incentive-weekly    # Monday
+0  13 1 * *   bash $RJ incentive-monthly   # 1st
+
+# --- monthly rollups ------------------------------------------------------
+15 11 1 * *   bash $RJ monthly-dashboard   # 1st
+30 5 3 * *    bash $RJ monthly-resync      # 3rd
+30 11 1 * *   bash $RJ monthly-reminder    # 1st
+
+# --- discount fetch (reads the Offer Tracker email -> Supabase) -----------
+# NOTE: depends on the Offer Tracker EMAIL existing (section B in ARCHITECTURE.md).
+0  5 * * *    bash $RJ discount-fetch
+
+# --- watchdogs ------------------------------------------------------------
+0  9,15 * * *          bash $RJ session-watch
+0  8,12,16,20,0,4 * * * bash $RJ failure-watch
+
+# --- NOT YET SCHEDULED HERE: offer-tracker email (04:09) ------------------
+# That job is a separate Node/Playwright project not in this repo + a dead Apps
+# Script deployment. Add its line once ported and the deployment is fixed:
+# 9  4 * * *   bash $RJ offer-tracker

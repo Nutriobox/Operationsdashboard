@@ -30,7 +30,7 @@ from datetime import date, datetime, timedelta, timezone
 import config
 
 IST = timezone(timedelta(hours=5, minutes=30))
-SHEET_ID = "1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs"
+SHEET_ID = config.SALES_DATA_SHEET_ID
 TAB = "Monthly"
 
 # res_id -> sheet row in the Monthly tab (Sale value goes here; Avg/day in same row).

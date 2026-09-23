@@ -111,7 +111,8 @@ def session_failures(env: dict) -> list[dict]:
     try:
         tok = json.loads(config.TOKENS_FILE.read_text(encoding="utf-8"))
         status = tok.get("status", {})
-        bad = [s for s, v in status.items() if str(v).lower() != "ok"]
+        bad = [s for s, v in status.items()
+               if str(v).lower() != "ok" and not str(v).lower().startswith("unreachable")]
         if bad:
             out.append({
                 "job": "Scraper session (" + ", ".join(bad) + ")",

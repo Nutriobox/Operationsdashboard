@@ -142,6 +142,10 @@ def classify(status: dict, expiry: dict) -> tuple[str, list[str]]:
 
     for site in SITE_DOMAINS:
         state = str(status.get(site, "unknown"))
+        if state.lower().startswith("unreachable"):
+            # page didn't load (network / bot-check) — cookies are kept; not a logout
+            msgs.append(f"{site}: page did not load this time (not a logout): {state[:80]}")
+            continue
         if state.lower() != "ok":
             level = "degraded"
             msgs.append(f"{site}: LOGGED OUT ({state})")

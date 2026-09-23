@@ -37,6 +37,36 @@ SITES = {
 }
 
 
+NETWORK_HINTS = ("ERR_HTTP2_PROTOCOL_ERROR", "chrome-error://", "ERR_CONNECTION",
+                 "ERR_NETWORK", "ERR_TIMED_OUT", "ERR_NAME_NOT_RESOLVED",
+                 "ERR_INTERNET_DISCONNECTED", "Timeout", "interrupted by another navigation")
+
+
+def _visit(page, url: str, settle_ms: int) -> None:
+    """goto with retries. Zomato/Swiggy often reject a single headless load with
+    ERR_HTTP2_PROTOCOL_ERROR / a chrome-error redirect; that is a NETWORK/bot-check
+    blip, not a logout (2026-09-23). Retry 3x with back-off before giving up."""
+    last = None
+    for attempt in range(3):
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+            page.wait_for_timeout(settle_ms)
+            if page.url.startswith("chrome-error://"):
+                raise RuntimeError("landed on chrome-error:// page")
+            return
+        except Exception as e:
+            last = e
+            page.wait_for_timeout(5_000 * (attempt + 1))
+    raise last
+
+
+def _err_status(e: Exception) -> str:
+    msg = str(e).splitlines()[0][:120]
+    if any(h in str(e) for h in NETWORK_HINTS):
+        return f"unreachable (network/bot-check, NOT a logout): {msg}"
+    return f"error: {msg}"
+
+
 def _cookie_header(context, url_substr: str) -> str:
     parts = [f"{c['name']}={c['value']}"
              for c in context.cookies()
@@ -58,8 +88,7 @@ def harvest(headless: bool = True) -> dict:
 
         # --- Petpooja -----------------------------------------------------
         try:
-            page.goto(SITES["petpooja"], wait_until="domcontentloaded", timeout=60_000)
-            page.wait_for_timeout(4_000)
+            _visit(page, SITES["petpooja"], 4_000)
             logged_in = page.locator("#selected_restaurant_id").count() > 0
             if logged_in:
                 out["petpooja_cookie"] = _cookie_header(ctx, "petpooja.com")
@@ -67,12 +96,11 @@ def harvest(headless: bool = True) -> dict:
             else:
                 out["status"]["petpooja"] = "LOGGED OUT — run --login"
         except Exception as e:
-            out["status"]["petpooja"] = f"error: {e}"
+            out["status"]["petpooja"] = _err_status(e)
 
         # --- Zomato -------------------------------------------------------
         try:
-            page.goto(SITES["zomato"], wait_until="domcontentloaded", timeout=60_000)
-            page.wait_for_timeout(4_000)
+            _visit(page, SITES["zomato"], 4_000)
             ck = _cookie_header(ctx, "zomato.com")
             if ck:
                 out["zomato_cookie"] = ck
@@ -80,12 +108,11 @@ def harvest(headless: bool = True) -> dict:
             else:
                 out["status"]["zomato"] = "LOGGED OUT — run --login"
         except Exception as e:
-            out["status"]["zomato"] = f"error: {e}"
+            out["status"]["zomato"] = _err_status(e)
 
         # --- Swiggy (token lives in localStorage, not a cookie) ------------
         try:
-            page.goto(SITES["swiggy"], wait_until="domcontentloaded", timeout=60_000)
-            page.wait_for_timeout(6_000)
+            _visit(page, SITES["swiggy"], 6_000)
             token = page.evaluate("() => localStorage.getItem('access_token')")
             if token:
                 out["swiggy_access_token"] = token
@@ -94,7 +121,7 @@ def harvest(headless: bool = True) -> dict:
             else:
                 out["status"]["swiggy"] = "LOGGED OUT — run --login"
         except Exception as e:
-            out["status"]["swiggy"] = f"error: {e}"
+            out["status"]["swiggy"] = _err_status(e)
 
         ctx.close()
 
@@ -145,9 +172,9 @@ def main():
     print("Token status:")
     dead = []
     for site, st in tokens["status"].items():
-        mark = "OK  " if st == "ok" else "FAIL"
+        mark = "OK  " if st == "ok" else ("WARN" if st.startswith("unreachable") else "FAIL")
         print(f"  [{mark}] {site:9s} {st}")
-        if st != "ok":
+        if st != "ok" and not st.startswith("unreachable"):
             dead.append(site)
 
     if args.check:

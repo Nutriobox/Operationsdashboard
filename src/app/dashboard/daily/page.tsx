@@ -6,12 +6,12 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-const SHEET_ID = '1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs';
+const SHEET_ID = '1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk';
 
 // Sunday=0 ... Saturday=6 mapped to the gid of that tab in the sheet.
 const DAY_GIDS: Record<number, string> = {
   0: '1531957147', // Sun
-  1: '417033488',  // Mon
+  1: '1655719103',  // Mon
   2: '2078196306', // Tues
   3: '1189627705', // Wed
   4: '169886895',  // Thur

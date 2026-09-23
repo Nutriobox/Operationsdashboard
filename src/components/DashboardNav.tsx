@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 
 // Daily Dashboard: which weekday tab in the Sales Data sheet to open.
 // "Daily" means yesterday's tab — today's numbers aren't finalized yet.
-const DAILY_SHEET_ID = '1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs';
+const DAILY_SHEET_ID = '1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk';
 const DAY_GIDS: Record<number, string> = {
   0: '1531957147', // Sun
-  1: '417033488',  // Mon
+  1: '1655719103',  // Mon
   2: '2078196306', // Tues
   3: '1189627705', // Wed
   4: '169886895',  // Thur

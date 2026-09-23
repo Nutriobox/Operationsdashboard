@@ -185,9 +185,9 @@ function DownArrow() {
 
 /* ── URL builders (same logic as DashboardNav) ── */
 
-const DAILY_SHEET_ID = '1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs';
+const DAILY_SHEET_ID = '1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk';
 const DAY_GIDS: Record<number, string> = {
-  0: '1531957147', 1: '417033488', 2: '2078196306',
+  0: '1531957147', 1: '1655719103', 2: '2078196306',
   3: '1189627705', 4: '169886895', 5: '1816270025', 6: '1918686710',
 };
 

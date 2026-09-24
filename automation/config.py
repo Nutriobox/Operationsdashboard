@@ -70,7 +70,7 @@ KOT_SOURCE_TOTAL_ROW = 11
 
 # DESTINATION: "Sales Data" workbook, tab "Daily KOT Comparsion".
 # (The misspelling is in the real sheet. Do not "fix" it.)
-SALES_DATA_SHEET_ID = "1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk"   # native Google Sheet copy (2026-09-23); old .xlsx was 1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs
+SALES_DATA_SHEET_ID = "1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs"   # reverted to .xlsx 2026-09-24 (Satvik: keep .xlsx as source of truth); native copy was 1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk
 KOT_DEST_TAB = "Daily KOT Comparsion"
 
 # Destination is a wide layout: outlets across columns, 3 rows per date block.

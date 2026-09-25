@@ -54,6 +54,19 @@ SITE_DOMAINS = {
     "swiggy": "swiggy.com",
 }
 
+# Google Sheets writing profile. This is a SEPARATE session from the
+# Petpooja/Zomato/Swiggy tokens above: it is the signed-in Google account
+# (mayank@nutriobox.com) in the persistent browser profile that kot_daily.py,
+# weekly_sales_sync.py, daily_sheet.py and delay_dashboard.py write through.
+# It logged out on 25 Sep 2026 and nothing was watching it — kot_daily and
+# weekly_sales failed silently. We now probe it every run: a gviz CSV export of
+# a PRIVATE sheet returns CSV when signed in, or the sign-in HTML when not
+# (same signal sheet_writer_ui.py already relies on). Fix on logout:
+# run DELAY-LOGIN.bat and sign in as mayank@nutriobox.com.
+GOOGLE_PROBE_SHEET = "1yOYpZBjohebpfpjRIfrDnUNd21bDcFcbt2vem1D_mn8"  # Daily KOT (private)
+GVIZ_URL = ("https://docs.google.com/spreadsheets/d/{sid}/gviz/tq"
+            "?tqx=out:csv&headers=0&_cb={cb}")
+
 
 # ---------------------------------------------------------------------------
 # env
@@ -123,6 +136,54 @@ def cookie_expiry() -> dict[str, str | None]:
 
 
 # ---------------------------------------------------------------------------
+# google sheets writing profile
+# ---------------------------------------------------------------------------
+def google_status() -> str:
+    """
+    Liveness of the signed-in Google profile used for all Sheets writes.
+
+    Returns one of:
+      "ok"          — gviz returned CSV, the profile is signed in.
+      "LOGGED OUT"  — gviz returned the sign-in page (or a redirect to it).
+      "unknown: …"  — the probe itself could not run (playwright/network); we do
+                      NOT treat this as a logout, to avoid false alarms.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as e:
+        return f"unknown: playwright unavailable ({e})"
+
+    try:
+        with sync_playwright() as p:
+            ctx = p.chromium.launch_persistent_context(
+                user_data_dir=str(PROFILE_DIR), headless=True,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            try:
+                cb = int(datetime.now(timezone.utc).timestamp() * 1000)
+                url = GVIZ_URL.format(sid=GOOGLE_PROBE_SHEET, cb=cb)
+                resp = ctx.request.get(url, timeout=30000)
+                if resp.status != 200:
+                    # 302 to accounts.google.com is followed to a 200 HTML page,
+                    # so a non-200 here is unusual; treat as inconclusive.
+                    return f"unknown: gviz HTTP {resp.status}"
+                body = resp.text()
+                if body.lstrip().startswith("<") or "accounts.google.com" in body[:2000]:
+                    return "LOGGED OUT"
+                return "ok"
+            finally:
+                try:
+                    ctx.close()
+                except Exception:
+                    pass
+    except Exception as e:
+        msg = str(e).splitlines()[0] if str(e) else e.__class__.__name__
+        if "SingletonLock" in str(e) or "ProcessSingleton" in str(e):
+            return "unknown: profile locked (another job running)"
+        return f"unknown: probe failed ({msg})"
+
+
+# ---------------------------------------------------------------------------
 # status
 # ---------------------------------------------------------------------------
 def read_status() -> dict:
@@ -135,7 +196,7 @@ def read_status() -> dict:
     return {"status": d.get("status", {}), "refreshed_at": d.get("refreshed_at")}
 
 
-def classify(status: dict, expiry: dict) -> tuple[str, list[str]]:
+def classify(status: dict, expiry: dict, google: str = "unknown") -> tuple[str, list[str]]:
     """Return (level, messages). level = healthy | warning | degraded."""
     msgs: list[str] = []
     level = "healthy"
@@ -149,6 +210,17 @@ def classify(status: dict, expiry: dict) -> tuple[str, list[str]]:
         if state.lower() != "ok":
             level = "degraded"
             msgs.append(f"{site}: LOGGED OUT ({state})")
+
+    # Google Sheets writing profile (separate from the tokens above).
+    g = str(google or "unknown")
+    if g == "LOGGED OUT":
+        level = "degraded"
+        msgs.append("google (Sheets writing profile): LOGGED OUT — "
+                    "kot_daily / weekly_sales / daily_sheet will all fail. "
+                    "Fix: run DELAY-LOGIN.bat and sign in as mayank@nutriobox.com.")
+    elif g.startswith("unknown"):
+        # probe could not run — surface it but do not escalate the level
+        msgs.append(f"google (Sheets writing profile): probe inconclusive ({g[8:].strip() or 'no detail'})")
 
     if level != "degraded":
         now = datetime.now(IST)
@@ -250,13 +322,15 @@ def main() -> int:
 
     st = read_status()
     expiry = cookie_expiry()
-    level, msgs = classify(st["status"], expiry)
+    google = google_status()
+    level, msgs = classify(st["status"], expiry, google)
 
     print(f"checked at   : {datetime.now(IST):%Y-%m-%d %H:%M} IST")
     print(f"refreshed_at : {st['refreshed_at']}")
     for site in SITE_DOMAINS:
         exp = expiry.get(site) or "—"
         print(f"  {site:9} {str(st['status'].get(site, 'unknown')):24} expires {exp}")
+    print(f"  {'google':9} {google:24} (Sheets writing profile)")
     print(f"level        : {level.upper()}")
     for m in msgs:
         print(f"  - {m}")
@@ -266,7 +340,8 @@ def main() -> int:
 
     payload = {
         "level": level,
-        "sites": {s: str(st["status"].get(s, "unknown")) for s in SITE_DOMAINS},
+        "sites": {**{s: str(st["status"].get(s, "unknown")) for s in SITE_DOMAINS},
+                  "google": google},
         "expiry": expiry,
         "messages": msgs,
         "refreshed_at": st["refreshed_at"],
@@ -278,15 +353,29 @@ def main() -> int:
         subject = ("NutrioBox automation — SESSION LOGGED OUT"
                    if level == "degraded"
                    else "NutrioBox automation — session expiring soon")
+        # The two logins are different accounts / different helpers, so spell out
+        # both and let the reader pick the one that matches the messages above.
+        google_out = google == "LOGGED OUT"
+        sites_out = any(str(st["status"].get(s, "")).lower() not in ("ok", "")
+                        and not str(st["status"].get(s, "")).lower().startswith("unreachable")
+                        for s in SITE_DOMAINS)
+        fix_lines = ["\n\nFix (about 3 minutes each, on the office laptop):"]
+        if sites_out or not google_out:
+            fix_lines.append(
+                "  Petpooja / Zomato / Swiggy  ->  run TOKENS-LOGIN.bat\n"
+                "    (or: cd C:\\Users\\hp\\Downloads\\Operationsdashboard\\automation\n"
+                "         python refresh_tokens.py --login)")
+        if google_out:
+            fix_lines.append(
+                "  Google Sheets writing profile  ->  run DELAY-LOGIN.bat\n"
+                "    then sign in as mayank@nutriobox.com and close the window.")
         body = (
             f"Automation session status: {level.upper()}\n\n"
             + "\n".join(f"  - {m}" for m in msgs)
-            + "\n\nFix (about 3 minutes, on the office laptop):\n"
-              "  cd C:\\Users\\hp\\Downloads\\Operationsdashboard\\automation\n"
-              "  python refresh_tokens.py --login\n\n"
-              "Sign in to each site listed above when the browser opens.\n\n"
+            + "\n".join(fix_lines)
+            + "\n\nSign in to each item listed above when the browser opens.\n\n"
               "Jobs affected while this is unresolved: sales dashboard, KOT\n"
-              "comparisons, daily sheet, momos weekly, offer tracker.\n"
+              "comparisons, daily sheet, weekly sales, momos weekly, offer tracker.\n"
         )
         print("alert        :", "sent" if send_alert(env, subject, body) else "failed")
 

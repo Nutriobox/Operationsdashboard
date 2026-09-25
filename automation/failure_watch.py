@@ -41,13 +41,25 @@ EXIT_RE = re.compile(r"====\s*EXIT\s+(-?\d+)\s*====")
 RUN_RE = re.compile(r"====.*RUN\s+(.+?)\s*====", re.IGNORECASE)
 
 # (display name, log filename, the run_*.bat to re-run it by hand)
+# A missing log file is simply skipped (scan_log -> None), so listing a job that
+# has not produced a log yet is harmless — it starts being watched the moment it
+# first runs. The month-boundary jobs were added 25 Sep 2026: incentive_delay and
+# daily_sheet had been failing for weeks on missing month tabs with nothing
+# watching them.
 JOBS = [
     ("Sales - daily sheet fill",   "daily_sheet.log",        "run_daily_sheet.bat"),
     ("Sales - weekly fill",        "weekly_sales.log",       "run_weekly_sales.bat"),
     ("Sales - monthly fill",       "monthly_sales_fill.log", "run_monthly_sales_fill.bat"),
     ("Sales dashboard pull",       "daily_data.log",         "run_daily.bat"),
+    ("Sales - monthly resync",     "monthly_resync.log",     "run_monthly_resync.bat"),
+    ("Monthly dashboard",          "monthly_dashboard.log",  "run_monthly_dashboard.bat"),
     ("KOT - daily",                "kot_daily.log",          "run_kot_daily.bat"),
     ("KOT - weekly",               "kot_weekly.log",         "run_kot_weekly.bat"),
+    ("KOT - monthly",              "kot_monthly.log",        "run_kot_monthly.bat"),
+    ("Incentive - delay (weekly)", "incentive_delay.log",    "run_incentive_delay.bat"),
+    ("Incentive - weekly",         "incentive_weekly.log",   "run_incentive_weekly.bat"),
+    ("Incentive - monthly",        "incentive_monthly.log",  "run_incentive_monthly.bat"),
+    ("Weekly report",              "weekly_report.log",      "run_weekly_report.bat"),
     ("Ratings",                    "ratings.log",            "run_ratings.bat"),
     ("Delay dashboard",            "delay.log",              "run_delay.bat"),
     ("Momos",                      "momos.log",              "run_momos.bat"),
@@ -74,6 +86,18 @@ def fix_hint(tail: str, rerun_bat: str) -> str:
     if "unicodeencodeerror" in t:
         return ("Console encoding crash. Fix: ensure the run_*.bat sets "
                 "PYTHONIOENCODING=utf-8 (already patched for discount).")
+    # Month-boundary signatures FIRST — they can co-occur with "verify failed"
+    # in the same tail, and the month-tab remedy is more specific/useful.
+    if ("not been extended for this month" in t or "carries the label" in t
+            or "no row in column a" in t):
+        return ("New month not seeded: the day-of-week tab has no column-A date row "
+                "for this date yet (the daily fill deliberately refuses to append "
+                "blindly). Add this month's date labels to column A of the affected "
+                "weekday tab in the Sales Data sheet, then re-run " + rerun_bat)
+    if ("does not exist" in t and "monthly run creates it" in t) or "refusing to create here" in t:
+        return ("New month tab missing: the monthly run that creates this month's "
+                "scored tab has not run yet. Fix: run run_incentive_monthly.bat "
+                "(creates the month tab), then re-run " + rerun_bat)
     if "verify failed" in t:
         return ("Sheet read-back verification failed. Check the target tab/row, then re-run " + rerun_bat)
     if "already contain data" in t or "already filled" in t:

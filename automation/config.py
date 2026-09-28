@@ -70,7 +70,7 @@ KOT_SOURCE_TOTAL_ROW = 11
 
 # DESTINATION: "Sales Data" workbook, tab "Daily KOT Comparsion".
 # (The misspelling is in the real sheet. Do not "fix" it.)
-SALES_DATA_SHEET_ID = "1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs"   # reverted to .xlsx 2026-09-24 (Satvik: keep .xlsx as source of truth); native copy was 1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk
+SALES_DATA_SHEET_ID = "1r9u4DMsRzdExu50yuRT5kn21tsHx-vqs"   # 2026-09-28: the REAL sheet the directors/team share — must stay this .xlsx (cannot re-share a new file). NOTE: .xlsx can only be written via the browser (UI) writer + a live Google login, which expires periodically; session_watch monitors it and DELAY-LOGIN.bat re-authenticates. Native mirror (API-writable) is 1liC4dGXRnahACXdxI3lbxi-BbE2I7Jb4C49a2R0OiCk.
 KOT_DEST_TAB = "Daily KOT Comparsion"
 
 # Destination is a wide layout: outlets across columns, 3 rows per date block.

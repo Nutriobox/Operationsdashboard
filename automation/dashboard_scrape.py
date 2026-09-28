@@ -288,7 +288,15 @@ def scrape_daily(target_date: str, headless: bool = True,
             discount = _num(st.get("total_discount"))
             orders = int(_num(st.get("total_orders"), 0) or 0)
             online_pct = round(online / total_sales * 100, 2) if (online and total_sales) else 0.0
-            discount_pct = round(discount / total_sales * 100, 2) if (discount and total_sales) else 0.0
+            # Discount % must match Petpooja's "% Discounts given" dashboard card,
+            # which is discount / (net_sales + discount) — i.e. discount over the
+            # pre-discount value net of tax (the st['c_t'] figure), NOT discount /
+            # total_sales (total_sales includes tax, which over-states it by ~3-4pts).
+            # The pre-2026-09 card scrape used this base; the JSON rewrite regressed
+            # it to /total_sales, inflating every Sep value. (verified vs Aug: 30 Aug
+            # 253269/1131383 = 22.39% matches the historical sheet exactly.)
+            disc_base = net_sales + discount
+            discount_pct = round(discount / disc_base * 100, 2) if (discount and disc_base) else 0.0
 
             return {
                 "displayed_range": target_date,

@@ -7,4 +7,6 @@ cd /d "C:\Users\hp\Downloads\Operationsdashboard\automation"
 if not exist logs mkdir logs
 echo ==== KEEPALIVE RUN %DATE% %TIME% ==== >> logs\keepalive.log
 python refresh_tokens.py >> logs\keepalive.log 2>&1
+echo ---- google session keepalive (keeps the mayank@ login warm for the .xlsx writes) ---- >> logs\keepalive.log
+python google_keepalive.py >> logs\keepalive.log 2>&1
 echo ==== EXIT %ERRORLEVEL% ==== >> logs\keepalive.log

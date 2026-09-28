@@ -12,4 +12,4 @@ REPO_DIR = r"C:\Users\hp\Downloads\Operationsdashboard"
 # Leave SMTP_USER = None to skip email entirely.
 SMTP_USER         = "you@gmail.com"
 SMTP_APP_PASSWORD = "abcd efgh ijkl mnop"   # 16-char Gmail app password
-EMAIL_TO          = ["satvik@nutriobox.com"]
+EMAIL_TO          = ["mayank@nutriobox.com"]

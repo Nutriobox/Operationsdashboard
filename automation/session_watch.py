@@ -46,7 +46,9 @@ TOKENS = config.TOKENS_FILE
 STATUS_OBJECT = "reports/session-status.json"
 
 WARN_DAYS = 3
-ALERT_TO = "satvik@nutriobox.com"
+# 2026-09-28: automation alerts must NOT go to satvik@ (director's mailbox) —
+# route to the automation owner instead. failure_watch.py imports ALERT_TO from here.
+ALERT_TO = "mayank@nutriobox.com"
 
 SITE_DOMAINS = {
     "petpooja": "petpooja.com",

@@ -6,7 +6,15 @@ set PYTHONIOENCODING=utf-8
 cd /d "C:\Users\hp\Downloads\Operationsdashboard\automation"
 if not exist logs mkdir logs
 echo ==== DAILY SHEET RUN %DATE% %TIME% ==== >> logs\daily_sheet.log
-python refresh_tokens.py >> logs\daily_sheet.log 2>&1
+REM 2026-09-30: REMOVED the "python refresh_tokens.py" pre-step. It launched a
+REM headless Chromium against secrets/browser-profile, which HANGS/FAILS whenever
+REM the profile is logged out (or the profile lock is held) — and that stall was
+REM blocking the login-free writer below (see 30 Sep 10:45 run: header logged,
+REM then nothing). daily_sheet_drive.py does NOT need a browser: it reads the
+REM petpooja_cookie from secrets/tokens.json, which the 04:00 daily_data and 06:00
+REM delay jobs already refresh every morning (well before this 10:45 run). If the
+REM cookie is ever stale, daily_sheet_drive.py exits non-zero and failure_watch
+REM alerts — it will not silently hang.
 REM 2026-09-29: switched from the browser (UI) writer to the DRIVE-API writer.
 REM daily_sheet_drive.py pulls Petpooja over HTTP and updates the real .xlsx in
 REM place via the Drive API using the service-account key — NO Google login, NO

@@ -623,16 +623,42 @@ def _prime_kot_page(page, ctx, prime_oid):
         raise ScrapeError(
             f"dashboard did not fully render (no KOT menu link; at {page.url!r}) — "
             "the automation profile may need: python refresh_tokens.py --login")
+    # Dismiss the one-shot "Today's Snapshot" dashboard modal if it's up — it
+    # overlays the sidebar and intercepts the KOT-link click, which surfaced as
+    # the "could not click the KOT menu link" Page.click timeout. Added 2026-10-05.
+    for _sel in ('button:has-text("Skip")', 'text=Skip', '[aria-label="Close"]'):
+        try:
+            page.click(_sel, timeout=1_500)
+            break
+        except Exception:
+            pass
+    # Open the KOT list. Try the sidebar-link click first (the human flow); if it
+    # is still intercepted, navigate straight to it. The KOT link already rendered,
+    # which proves the single-outlet switch committed, so a direct goto now serves
+    # the real page — not the dashboard reload stub a clean (un-switched) session
+    # gets. Verified live 2026-10-05.
+    opened = False
     try:
-        page.click('a[href*="kot_list"]', timeout=15_000)
-    except Exception as e:
-        raise ScrapeError(f"could not click the KOT menu link: {str(e).splitlines()[0]}")
+        page.click('a[href*="kot_list"]', timeout=8_000)
+        opened = True
+    except Exception:
+        pass
+    if not opened:
+        try:
+            page.goto(KOT_LIST_URL, wait_until="domcontentloaded", timeout=60_000)
+        except Exception as e:
+            raise ScrapeError(f"could not open the KOT list: {str(e).splitlines()[0]}")
     try:
         page.wait_for_selector("#KotStartdate", timeout=25_000)
     except Exception:
-        raise ScrapeError(
-            f"KOT list did not render after clicking the menu (at {page.url!r}) — "
-            "Petpooja may have changed the KOT page")
+        # Last resort: one more direct navigation now that the outlet is committed.
+        try:
+            page.goto(KOT_LIST_URL, wait_until="domcontentloaded", timeout=60_000)
+            page.wait_for_selector("#KotStartdate", timeout=20_000)
+        except Exception:
+            raise ScrapeError(
+                f"KOT list did not render (at {page.url!r}) — "
+                "Petpooja may have changed the KOT page")
 
 
 def scrape_kot_totals(kot_from: str, kot_to: str, outlet_ids,

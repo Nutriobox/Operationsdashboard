@@ -132,6 +132,61 @@ def row_styles(sheet_xml, rn):
     return out
 
 
+# --- strip background COLOUR from a copied cell style --------------------------
+# The style index we inherit from the template row (target-2) carries, in a
+# single .xlsx `s="N"`, BOTH the number format AND the fill (background colour) +
+# font colour. Reusing it drags whatever fill that row happened to have onto the
+# new row — colour with no business meaning. The directors colour cells by their
+# own logic, so this job must write ONLY values + number formats and never add a
+# fill. defill() returns an equivalent style that keeps the number format, font,
+# border and alignment but has NO fill: it reuses an existing fill-free style
+# when the workbook already has one (the usual case — styles.xml then stays
+# untouched) and appends a minimal one only if none exists. (2026-10-08)
+_FILL_ATTR = re.compile(r'\sfillId="\d+"')
+_APPLYFILL = re.compile(r'\sapplyFill="1"')
+
+
+def parse_cellxfs(styles_xml):
+    """Return (match_of_<cellXfs>…</cellXfs>, [xf strings]) or (None, [])."""
+    m = re.search(r'(<cellXfs count=")(\d+)("[^>]*>)(.*?)(</cellXfs>)',
+                  styles_xml, re.S)
+    if not m:
+        return None, []
+    return m, re.findall(r'<xf\b[^>]*?(?:/>|>.*?</xf>)', m.group(4), re.S)
+
+
+def _xf_attr(xf, name):
+    m = re.search(name + r'="(\d+)"', xf)
+    return m.group(1) if m else "0"
+
+
+def _no_fill(xf):
+    """The xf text with its fill removed — for comparing styles ignoring fill."""
+    return _APPLYFILL.sub('', _FILL_ATTR.sub('', xf, 1), 1)
+
+
+def make_defiller(xfs):
+    """defill(idx)->idx' : a fill-free twin of style idx (same numFmt/font/
+    border/alignment). Appends to `xfs` only if no existing twin is found."""
+    appended = []
+
+    def defill(idx):
+        idx = str(idx)
+        x = xfs[int(idx)]
+        if _xf_attr(x, "fillId") == "0":
+            return idx                          # already fill-free — keep as-is
+        want = _no_fill(x)
+        for i, y in enumerate(xfs):
+            if _xf_attr(y, "fillId") == "0" and _no_fill(y) == want:
+                return str(i)                   # reuse existing twin
+        new = _APPLYFILL.sub('', re.sub(r'fillId="\d+"', 'fillId="0"', x, 1), 1)
+        xfs.append(new)
+        appended.append(new)
+        return str(len(xfs) - 1)
+
+    return defill, appended
+
+
 def build_row_xml(rn, vals, styles, a_cell_xml):
     def c(col, inner=""):
         s = styles.get(col, "0")
@@ -176,6 +231,9 @@ def main():
     sheet_path = sheet_file_for_tab(zf, tab)
     sst = shared_strings(zf)
     sheet_xml = zf.read(sheet_path).decode("utf-8")
+    styles_xml = zf.read("xl/styles.xml").decode("utf-8")
+    cx_match, cellxfs = parse_cellxfs(styles_xml)
+    defill, appended_xfs = make_defiller(cellxfs)
 
     # locate target row by column-A label
     target_rn = None
@@ -199,6 +257,11 @@ def main():
 
     # style template: prefer row target-2 (same banding parity), else target-1
     styles = row_styles(sheet_xml, target_rn - 2) or row_styles(sheet_xml, target_rn - 1) or row_styles(sheet_xml, target_rn)
+    # Keep the template's number format / font / border / alignment but STRIP any
+    # background colour: write values only, never drag a neighbour row's fill down
+    # (colours are maintained by the team's own logic). Column A (the date label)
+    # is kept verbatim below, so it is intentionally not touched here.
+    styles = {col: defill(idx) for col, idx in styles.items()}
     new_row = build_row_xml(target_rn, vals, styles, a_cell_xml)
 
     if a.dry_run:
@@ -208,12 +271,28 @@ def main():
     if sheet_xml2 == sheet_xml:
         print(f"row {target_rn} already matches the correct values — nothing to change. Done."); return 0
 
-    # rebuild zip, only sheet_path changed
+    # If defill had to invent a new fill-free style, write the grown cellXfs back
+    # (count + appended xf entries). Normally the workbook already has the twin, so
+    # styles.xml is untouched and only sheet_path changes.
+    if appended_xfs and cx_match:
+        grown = (cx_match.group(1) + str(len(cellxfs)) + cx_match.group(3)
+                 + "".join(cellxfs) + cx_match.group(5))
+        styles_xml2 = styles_xml.replace(cx_match.group(0), grown, 1)
+    else:
+        styles_xml2 = styles_xml
+
+    # rebuild zip (sheet_path always changes; styles.xml only if it grew)
     out = io.BytesIO()
     zin = zipfile.ZipFile(io.BytesIO(raw))
     zout = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
     for item in zin.namelist():
-        zout.writestr(item, sheet_xml2.encode("utf-8") if item == sheet_path else zin.read(item))
+        if item == sheet_path:
+            data = sheet_xml2.encode("utf-8")
+        elif item == "xl/styles.xml":
+            data = styles_xml2.encode("utf-8")
+        else:
+            data = zin.read(item)
+        zout.writestr(item, data)
     zin.close(); zout.close()
 
     r = requests.patch(DRIVE_UP.format(id=XLSX_ID), headers={**H,

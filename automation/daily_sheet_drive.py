@@ -255,13 +255,13 @@ def main():
     if has_data and not a.force:
         print(f"row {target_rn} already has data — refusing to overwrite (use --force). Done."); return 0
 
-    # style template: prefer row target-2 (same banding parity), else target-1
-    styles = row_styles(sheet_xml, target_rn - 2) or row_styles(sheet_xml, target_rn - 1) or row_styles(sheet_xml, target_rn)
-    # Keep the template's number format / font / border / alignment but STRIP any
-    # background colour: write values only, never drag a neighbour row's fill down
-    # (colours are maintained by the team's own logic). Column A (the date label)
-    # is kept verbatim below, so it is intentionally not touched here.
-    styles = {col: defill(idx) for col, idx in styles.items()}
+    # Preserve the TARGET row's OWN cell styles verbatim: write ONLY the values and
+    # never alter any cell's fill / number format / font / border. The directors
+    # colour the day rows by their own logic, so reusing each column's existing style
+    # index on the target row keeps every colour exactly as the team set it.
+    # (Previously this copied a neighbour row's style and stripped its fill, which
+    # wiped the directors' colours off the row being written. Fixed 2026-10-13.)
+    styles = row_styles(sheet_xml, target_rn)
     new_row = build_row_xml(target_rn, vals, styles, a_cell_xml)
 
     if a.dry_run:

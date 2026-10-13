@@ -89,12 +89,12 @@ def read_delivery_pct(scored: date, headless: bool) -> dict:
     from sheet_writer import BrowserWriter
     with BrowserWriter(headless=headless) as w:
         w.open_book(SALES_SHEET_ID)
-        row1 = (w.read_tab("Dining/ Dlvry") or [[]])[0]
+        row1 = (w.read_tab("Dining Dlvry") or [[]])[0]
         j = _find_month_col(row1, scored.year, scored.month)
         if j is None:
-            raise RuntimeError(f"Dining/ Dlvry tab has no block for {scored:%b %Y}")
+            raise RuntimeError(f"Dining Dlvry tab has no block for {scored:%b %Y}")
         sale_col = col_a1(j + 1)          # delivery-sale % = LEFT column of the block
-        w.select_tab("Dining/ Dlvry")
+        w.select_tab("Dining Dlvry")
         out = {}
         for short, r in DINING_ROW.items():
             v = _num(w.read_selected_value(f"{sale_col}{r}"))

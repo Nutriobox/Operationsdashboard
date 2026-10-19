@@ -151,13 +151,18 @@ def main() -> int:
         print(f"month block : header {row1[j]!r} -> Sale col {sale_col}, Avg col {avg_col} "
               f"(row2 labels: {row2[j] if j < len(row2) else ''!r}/"
               f"{row2[j+1] if j+1 < len(row2) else ''!r})")
-        # Confirm block orientation. The month header already can't be the summary
-        # block (its range header doesn't parse), so requiring the "Avg/day" label
-        # on the RIGHT column is enough — the newest month's "Sale" label cell is
-        # sometimes blank/merged, which is fine.
-        if "avg" not in lbl_avg and "sale" not in lbl_sale:
-            print("ABORT: neither a 'Sale' nor an 'Avg/day' label under the located "
-                  "header — refusing to write into the wrong block.")
+        # Confirm block orientation. find_month_block only returns a column whose
+        # row-1 header parses as EXACTLY the target month (the summary block's range
+        # header, e.g. "June 25 - Mar 26", can't parse), so the located Sale/Avg
+        # pair is already proven to be this month's. The row-2 label text is a
+        # redundant belt-and-suspenders check — and on the shared .xlsx it is
+        # unreliable: gviz's full-sheet CSV export drops text labels that sit in
+        # numeric columns, so lbl_sale/lbl_avg read empty even when the cells
+        # visibly say "Sale"/"Avg/day". So only abort if a label IS readable and
+        # clearly contradicts the orientation; tolerate empty (xlsx-hidden) labels.
+        if (lbl_avg or lbl_sale) and ("avg" not in lbl_avg and "sale" not in lbl_sale):
+            print("ABORT: row-2 labels under the located header do not match "
+                  "'Sale'/'Avg/day' — refusing to write into the wrong block.")
             return 3
 
         # ---- build the write plan ----

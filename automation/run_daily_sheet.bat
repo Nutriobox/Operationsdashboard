@@ -19,5 +19,11 @@ REM 2026-09-29: switched from the browser (UI) writer to the DRIVE-API writer.
 REM daily_sheet_drive.py pulls Petpooja over HTTP and updates the real .xlsx in
 REM place via the Drive API using the service-account key — NO Google login, NO
 REM copy-paste. The old browser writer (daily_sheet.py) is kept for reference.
-python daily_sheet_drive.py %* >> logs\daily_sheet.log 2>&1
+REM 2026-10-21: run through daily_sheet_backfill.py instead of calling the writer
+REM directly. It fills ANY still-empty row in the last 5 days (not just yesterday),
+REM so a run missed because the 10:45 trigger didn't fire (laptop off/asleep) is
+REM recovered automatically on the next run that DOES fire. Each day is still the
+REM proven daily_sheet_drive.py writer, which refuses to overwrite filled rows, so
+REM this is safe + idempotent. A manual single day still works:  run_daily_sheet.bat --date YYYY-MM-DD
+python daily_sheet_backfill.py 5 %* >> logs\daily_sheet.log 2>&1
 echo ==== EXIT %ERRORLEVEL% ==== >> logs\daily_sheet.log

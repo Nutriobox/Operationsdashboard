@@ -48,7 +48,9 @@ if (-not (Test-Path $ReportsDir)) {
     exit 0
 }
 
+# Find the newest FULL export (exclude the shrunk SERVED copy we write below).
 $latest = Get-ChildItem -Path $ReportsDir -Filter $ReportGlob -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notlike '*SERVED*' } |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
 if ($null -eq $latest) {
@@ -57,7 +59,33 @@ if ($null -eq $latest) {
 }
 
 $sizeMb = [math]::Round($latest.Length / 1MB, 2)
-Log ("Latest report: {0} ({1} MB, modified {2})" -f $latest.Name, $sizeMb, $latest.LastWriteTime)
+Log ("Latest full report: {0} ({1} MB, modified {2})" -f $latest.Name, $sizeMb, $latest.LastWriteTime)
+
+# --- 2026-10-21: SHRINK before upload ------------------------------------
+# The raw export embeds a full year of order-line DAILY_DATA (~172 MB / ~12 MB
+# gzip). That exceeds the Vercel proxy's ~4.5 MB response cap, so /api/sales-
+# dashboard returned an empty body and the dashboard hung on "rendering".
+# shrink_dashboard.py keeps full intraday detail for the last 50 days and lets
+# older dates fall back to the monthly view, landing ~4 MB gzip (well under the
+# cap) and rendering ~4x lighter. We write the shrunk copy as *_SERVED.html so
+# EVERY uploader (this script AND the daily health-check's hash-compare, which
+# both pick the newest NutrioBox_Dashboard_*.html) treats the shrunk file as
+# canonical and stays consistent. If the shrink fails we DO NOT fall back to the
+# 172 MB file (that would re-break serving) — we abort and let the next run /
+# the health-check retry.
+$Shrinker = 'C:\Users\hp\Downloads\Operationsdashboard\automation\shrink_dashboard.py'
+$served   = Join-Path $ReportsDir 'NutrioBox_Dashboard_SERVED.html'
+Log "Shrinking $($latest.Name) -> NutrioBox_Dashboard_SERVED.html (50-day window)..."
+& python $Shrinker $latest.FullName $served --days 50 --older drop 2>&1 | ForEach-Object { Log ("  shrink> {0}" -f $_) }
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $served)) {
+    Log "Shrink failed (exit $LASTEXITCODE). NOT uploading the full file — aborting to avoid re-breaking the proxy." 'ERROR'
+    exit 1
+}
+# Upload the shrunk copy from here on.
+$latest = Get-Item $served
+$sizeMb = [math]::Round($latest.Length / 1MB, 2)
+Log ("Shrunk report ready: {0} ({1} MB)" -f $latest.Name, $sizeMb)
+# -------------------------------------------------------------------------
 
 # 3. Supabase Free plan caps files at 50 MB. The raw HTML is often well over
 #    that, but it gzip-compresses dramatically (Plotly/embedded data is mostly

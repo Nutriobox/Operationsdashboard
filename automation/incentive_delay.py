@@ -155,16 +155,18 @@ def main() -> int:
         print("\n(dry) nothing written.")
         return 0
 
-    from sheet_writer import BrowserWriter
-    with BrowserWriter(headless=headless) as w:
+    with inc.SASheetWriter() as w:          # native sheet -> service-account API
         w.open_book(inc.INCENTIVE_SHEET_ID)
-        problems = inc.write_metric_rows(w, tab, {inc.ROW[3]: m3, inc.ROW[4]: m4})
+        if w.ensure_month_tab(tab):
+            print(f"month tab {tab!r} created (blank copy of the newest month).")
+        problems = inc.write_metric_rows(w, tab, {inc.ROW[3]: m3, inc.ROW[4]: m4},
+                                         require_tab=False)
     if problems:
         print("\nVERIFY FAILED — check the sheet:")
         for p in problems:
             print("  -", p)
         return 1
-    print(f"\nOK — wrote rows {inc.ROW[3]} & {inc.ROW[4]} (H..Q) on {tab!r}.")
+    print(f"\nOK — wrote rows {inc.ROW[3]} & {inc.ROW[4]} (G..P) on {tab!r}.")
     return 0
 
 

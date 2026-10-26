@@ -243,70 +243,159 @@ def main() -> int:
               "or --auto-tab. Re-run with one of them.")
         return 7
 
-    ci = ANCHOR_COL_INDEX + (mon - ANCHOR_DATE).days - 1   # 0-indexed grid column
+    # ---- LIVE write straight into the .xlsx via the Google DRIVE API ---------
+    # 2026-10-26: replaced the signed-in-browser UI writer (sheet_writer.Browser
+    # Writer). The directors' "Sales Data" workbook is an uploaded .xlsx, which
+    # the Sheets API can't edit, so the old path typed into it through a Chrome
+    # profile whose Google login keeps expiring — and its canvas read-back was
+    # flaky enough to raise "readback mismatch" AFTER a write that had actually
+    # landed (false EXIT 1). The Drive API can replace the .xlsx bytes in place
+    # with the service-account key (never logs out), exactly like daily_sheet_
+    # drive.py: download -> set ONLY the target column's cells, preserving each
+    # cell's own style -> files.update -> verify by re-download. No browser, no
+    # Google login, no false read-backs.
+    import io
+    import re as _re
+    import zipfile
 
-    def cell(grid, row):
-        return str(grid[row - 1][ci]).strip() if (
-            grid and row - 1 < len(grid) and ci < len(grid[row - 1])) else ""
+    import requests
+    from daily_sheet_drive import creds_token, DRIVE, DRIVE_UP
 
-    def resolve_tab(writer) -> str | None:
-        """Scan 'Weekly NN' tabs for the one whose row-2 == target Monday's day
-        and whose consolidated cell is still empty."""
-        want = str(mon.day)
-        for n in WEEKLY_TAB_RANGE:
-            name = f"Weekly {n}"
-            try:
-                g = writer.read_tab(name)
-            except Exception:
-                continue
-            if cell(g, 2) in (want, want + ".0") and not cell(g, CONSOLIDATED_ROW):
-                return name
-        return None
+    want_day = str(mon.day)
 
-    # ---- LIVE write through the signed-in browser profile --------------------
-    from sheet_writer import BrowserWriter
-    with BrowserWriter(headless=not args.headed) as writer:
-        writer.open_book(SALES_SHEET_ID)
-        tab = args.tab or resolve_tab(writer)
-        if not tab:
-            print("ABORT: could not resolve the Weekly tab automatically. "
-                  'Re-run with --tab "Weekly NN".')
-            return 7
-        print(f"Weekly tab: {tab}")
-        writer.select_tab(tab)
-        grid = writer.read_tab(tab)
+    def _sheet_path(zf, tab):
+        wb = zf.read("xl/workbook.xml").decode("utf-8")
+        m = _re.search(r'<sheet [^>]*name="%s"[^>]*r:id="(rId\d+)"' % _re.escape(tab), wb)
+        if not m:
+            return None
+        rels = zf.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+        m2 = _re.search(r'Id="%s"[^>]*Target="(worksheets/sheet\d+\.xml)"' % m.group(1), rels)
+        return "xl/" + m2.group(1) if m2 else None
 
-        # Guard 3: the target column's row-2 header must equal the Monday's day.
-        want_day, got_day = str(mon.day), cell(grid, 2)
-        if got_day not in (want_day, want_day + ".0"):
-            print(f"ABORT: {col}2 on {tab!r} reads {got_day!r}, expected day {want_day!r} "
-                  f"for {mon}. Wrong tab or wrong column — not writing.")
-            return 5
+    def _sst(zf):
+        try:
+            s = zf.read("xl/sharedStrings.xml").decode("utf-8")
+        except KeyError:
+            return []
+        return [''.join(_re.findall(r'<t[^>]*>(.*?)</t>', si, _re.S))
+                for si in _re.findall(r'<si>(.*?)</si>', s, _re.S)]
 
-        # Guard 4: never overwrite.
-        for oid, (row, _a) in OUTLET_ROW.items():
-            if cell(grid, row):
-                print(f"ABORT: {col}{row} ({config.SHORT[oid]}) on {tab!r} already has "
-                      f"{cell(grid, row)!r} — not writing.")
-                return 6
-        if cell(grid, CONSOLIDATED_ROW):
-            print(f"ABORT: {col}{CONSOLIDATED_ROW} (consolidated) already filled — not writing.")
+    def _ctag(sx, ref):
+        # a self-closing <c .../> OR a <c ...>...</c>, anchored on the exact ref
+        return _re.search(r'<c r="%s"(?=[ />])[^>]*?(?:/>|>.*?</c>)' % ref, sx, _re.S)
+
+    def _ctext(sx, ref, sst):
+        m = _ctag(sx, ref)
+        if not m:
+            return None
+        tag = m.group(0)
+        if 't="s"' in tag:
+            vi = _re.search(r'<v>(\d+)</v>', tag)
+            return sst[int(vi.group(1))] if vi and int(vi.group(1)) < len(sst) else ""
+        v = _re.search(r'<v>(.*?)</v>', tag, _re.S)
+        return v.group(1) if v else ""
+
+    def _cempty(sx, ref):
+        m = _ctag(sx, ref)
+        if not m:
+            return True
+        return ('<v>' not in m.group(0)) and ('<f>' not in m.group(0))
+
+    def _setcell(sx, ref, value):
+        """Add a value to an existing (style-only) cell, keeping its style index.
+        The Weekly tabs pre-seed every week column's cells as <c r=".." s="N"/>,
+        so this never has to invent a cell or touch styles.xml."""
+        m = _ctag(sx, ref)
+        if not m:
+            raise ScrapeError(f"cell {ref} absent in the template — refusing to invent one.")
+        sm = _re.search(r's="(\d+)"', m.group(0))
+        s = sm.group(1) if sm else "0"
+        return sx[:m.start()] + f'<c r="{ref}" s="{s}"><v>{value}</v></c>' + sx[m.end():]
+
+    H = creds_token()
+    raw = requests.get(DRIVE.format(id=SALES_SHEET_ID) + "?alt=media&supportsAllDrives=true",
+                       headers=H, timeout=120).content
+    zf = zipfile.ZipFile(io.BytesIO(raw))
+    sst = _sst(zf)
+
+    # resolve the Weekly tab: its {col}2 header == Monday's day AND the
+    # consolidated cell is still empty (so a re-run can't double-write).
+    candidates = [args.tab] if args.tab else [f"Weekly {n}" for n in WEEKLY_TAB_RANGE]
+    tab = tab_sx = tab_path = None
+    matched_but_filled = None
+    for name in candidates:
+        sp = _sheet_path(zf, name)
+        if not sp:
+            continue
+        sx = zf.read(sp).decode("utf-8")
+        if _ctext(sx, f"{col}2", sst) in (want_day, want_day + ".0"):
+            if _cempty(sx, f"{col}{CONSOLIDATED_ROW}"):
+                tab, tab_sx, tab_path = name, sx, sp
+                break
+            matched_but_filled = name
+    if not tab:
+        if matched_but_filled:
+            print(f"Already filled: {col} on {matched_but_filled!r} — week {mon}..{sun} "
+                  "is already written. Nothing to do.")
+            return 0
+        print(f"ABORT: could not resolve an unfilled Weekly tab whose {col}2 == "
+              f"{want_day!r}. Re-run with --tab \"Weekly NN\".")
+        return 7
+    print(f"Weekly tab: {tab}")
+
+    # Guard 3: the target column's row-2 header must equal the Monday's day.
+    got_day = _ctext(tab_sx, f"{col}2", sst)
+    if got_day not in (want_day, want_day + ".0"):
+        print(f"ABORT: {col}2 on {tab!r} reads {got_day!r}, expected day {want_day!r} "
+              f"for {mon}. Wrong tab or wrong column — not writing.")
+        return 5
+
+    # Guard 4: never overwrite.
+    for oid, (row, _a) in OUTLET_ROW.items():
+        if not _cempty(tab_sx, f"{col}{row}"):
+            print(f"ABORT: {col}{row} ({config.SHORT[oid]}) on {tab!r} already has "
+                  f"{_ctext(tab_sx, f'{col}{row}', sst)!r} — not writing.")
             return 6
+    if not _cempty(tab_sx, f"{col}{CONSOLIDATED_ROW}"):
+        print(f"ABORT: {col}{CONSOLIDATED_ROW} (consolidated) already filled — not writing.")
+        return 6
 
-        # Write each outlet, consolidated last.
-        for oid, (row, _a) in OUTLET_ROW.items():
-            writer.write_cell(f"{col}{row}", rounded[oid])
-        writer.write_cell(f"{col}{CONSOLIDATED_ROW}", consolidated)
+    # Write each outlet, consolidated last — values only, styles untouched.
+    new_sx = tab_sx
+    for oid, (row, _a) in OUTLET_ROW.items():
+        new_sx = _setcell(new_sx, f"{col}{row}", rounded[oid])
+    new_sx = _setcell(new_sx, f"{col}{CONSOLIDATED_ROW}", consolidated)
 
-        # Guard 5: read back a sample and verify.
-        grid = writer.read_tab(tab)
-        checks = [(CONSOLIDATED_ROW, consolidated),
-                  (OUTLET_ROW[9960][0], rounded[9960]),
-                  (OUTLET_ROW[136183][0], rounded[136183])]
-        for row, want in checks:
-            have = cell(grid, row)
-            if _num(have) != want:
-                raise ScrapeError(f"readback mismatch at {col}{row}: wrote {want}, read {have!r}")
+    # rebuild the workbook with ONLY this one sheet changed, upload in place.
+    out = io.BytesIO()
+    zin = zipfile.ZipFile(io.BytesIO(raw))
+    zout = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
+    for item in zin.namelist():
+        zout.writestr(item, new_sx.encode("utf-8") if item == tab_path else zin.read(item))
+    zin.close()
+    zout.close()
+
+    r = requests.patch(
+        DRIVE_UP.format(id=SALES_SHEET_ID),
+        headers={**H, "Content-Type":
+                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+        data=out.getvalue(), timeout=180)
+    if r.status_code != 200:
+        print("UPLOAD FAILED", r.status_code, r.text[:200])
+        return 1
+
+    # Guard 5: verify by re-downloading and reading the cells back.
+    v = requests.get(DRIVE.format(id=SALES_SHEET_ID) + "?alt=media&supportsAllDrives=true",
+                     headers=H, timeout=120).content
+    vzf = zipfile.ZipFile(io.BytesIO(v))
+    vsx = vzf.read(tab_path).decode("utf-8")
+    vsst = _sst(vzf)
+    for row, want in [(CONSOLIDATED_ROW, consolidated),
+                      (OUTLET_ROW[9960][0], rounded[9960]),
+                      (OUTLET_ROW[136183][0], rounded[136183])]:
+        have = _ctext(vsx, f"{col}{row}", vsst)
+        if have is None or _num(have) != want:
+            raise ScrapeError(f"readback mismatch at {col}{row}: wrote {want}, read {have!r}")
 
     print(f"\nWrote + verified week {mon}..{sun} into {tab!r} column {col} "
           f"(consolidated {consolidated:,}).")

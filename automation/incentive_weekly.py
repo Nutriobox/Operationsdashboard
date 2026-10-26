@@ -203,21 +203,17 @@ def main() -> int:
         print("\n(dry) nothing written.")
         return 0
 
-    from sheet_writer import BrowserWriter
-    with BrowserWriter(headless=headless) as w:
+    with inc.SASheetWriter() as w:          # native sheet -> service-account API
         w.open_book(inc.INCENTIVE_SHEET_ID)
-        if tab not in w.tab_titles():
-            src = w.tab_titles()[0]          # newest month tab is leftmost
-            print(f"month tab {tab!r} missing — duplicating {src!r} to create it "
-                  "(monthly run then owns rows 3/15/18)")
-            w.duplicate_tab(src, tab)
+        if w.ensure_month_tab(tab):
+            print(f"month tab {tab!r} created (blank copy of the newest month).")
         problems = inc.write_metric_rows(w, tab, rows, require_tab=False)
     if problems:
         print("\nVERIFY FAILED:")
         for p in problems:
             print("  -", p)
         return 1
-    print(f"\nOK — wrote rows 6/9/12/21/24 (H..Q) on {tab!r}.")
+    print(f"\nOK — wrote rows 6/9/12/21/24 (G..P) on {tab!r}.")
     return 0
 
 

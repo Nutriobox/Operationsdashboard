@@ -751,6 +751,16 @@
   .m-name .name-text {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .m-name .name-col { display: flex; flex-direction: column; min-width: 0; }
+  .m-name .sv {
+    font-size: 11px; font-weight: 500; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .m-name .sv.ok { color: var(--success); }
+  .m-name .sv.warn { color: var(--warning); }
+  .m-name .sv.bad { color: var(--danger); }
+  .m-name .sv .dot-sm { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
   .status-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #d1d5db; flex-shrink: 0;
@@ -1457,6 +1467,34 @@
     if (s === 'off') return 'App not working';
     return 'No data';
   }
+  // Most recent business hour that has data, for the per-outlet "now" status.
+  function latestCell(o) {
+    for (let i = BUSINESS_HOURS.length - 1; i >= 0; i--) {
+      const h = o.hours[BUSINESS_HOURS[i]];
+      if (h && h.audio !== null) return h;
+    }
+    return null;
+  }
+  // Speaker + volume summary shown under each outlet name. Green = Bluetooth at
+  // good volume; red = on laptop speaker or muted; amber = low volume.
+  function speakerVolInfo(h) {
+    if (!h || !h.audio) return null;            // only meaningful while music plays
+    const parts = [];
+    let cls = 'ok';
+    const kind = h.outputKind;
+    if (kind === 'laptop') { parts.push('On laptop speaker'); cls = 'bad'; }
+    else if (kind === 'bluetooth') parts.push('Bluetooth');
+    else if (kind === 'usb') parts.push('USB speaker');
+    else if (kind === 'hdmi') parts.push('HDMI');
+    else if (kind === 'jack') parts.push('Wired');
+    else parts.push('Speaker ?');
+    if (h.muted === true) { parts.push('MUTED'); cls = 'bad'; }
+    else if (h.masterVolume != null) {
+      parts.push('Vol ' + h.masterVolume + '%');
+      if (h.masterVolume < 50 && cls === 'ok') cls = 'warn';
+    }
+    return { text: parts.join(' · '), cls };
+  }
   function cellClass(kind, value, processRunning) {
     if (value === null || value === undefined) return 'cell';
     if (kind === 'process') return 'cell ' + (value ? 'on' : 'off');
@@ -1536,7 +1574,7 @@
     const { startIso, endIso } = dayBoundsIST(dateIso);
     const { data, error } = await sb
       .from('outlet_checks')
-      .select('outlet_id,ts,process_running,audio_active,peak,output_device,output_kind')
+      .select('outlet_id,ts,process_running,audio_active,peak,output_device,output_kind,master_volume,app_volume,muted')
       .gte('ts', startIso).lt('ts', endIso)
       .order('outlet_id').order('ts');
     if (error) throw error;
@@ -1570,6 +1608,9 @@
         peak: Number(r.peak) || 0,
         outputKind: r.output_kind || null,
         outputDevice: r.output_device || null,
+        masterVolume: (r.master_volume == null ? null : Number(r.master_volume)),
+        appVolume: (r.app_volume == null ? null : Number(r.app_volume)),
+        muted: (r.muted == null ? null : !!r.muted),
       };
     });
     return OUTLETS.map(o => {
@@ -1812,10 +1853,15 @@
       const nowCell = isToday ? o.hours[nowHour] : null;
       const nowStatus = nowCell ? statusOfHour(nowCell) : 'nodata';
       if (isToday && o.summary.audio_hours === 0) row.classList.add('attention');
+      const svInfo = speakerVolInfo(latestCell(o));
+      const svLine = svInfo ? `<span class="sv ${svInfo.cls}"><span class="dot-sm"></span>${svInfo.text}</span>` : '';
       row.innerHTML = `
         <div class="m-name">
           <div class="status-dot ${nowStatus}"></div>
-          <span class="name-text">${o.label}</span>
+          <div class="name-col">
+            <span class="name-text">${o.label}</span>
+            ${svLine}
+          </div>
         </div>
         <div class="m-cells"></div>
         <div class="m-total"><strong>${o.summary.audio_hours}h</strong><div class="sub">of ${o.summary.recorded_hours}h logged</div></div>
@@ -1829,7 +1875,7 @@
         const t = pad(h.hour) + ':00';
         let s;
         if (h.audio === null) s = 'No data';
-        else if (h.audio) s = (h.outputKind === 'laptop' ? 'Playing on LAPTOP speaker' : 'Playing on Bluetooth') + ' · peak ' + ((h.peak || 0) * 100).toFixed(1) + '%' + (h.outputDevice ? ' · ' + h.outputDevice : '');
+        else if (h.audio) s = (h.outputKind === 'laptop' ? 'Playing on LAPTOP speaker' : 'Playing on Bluetooth') + ' · peak ' + ((h.peak || 0) * 100).toFixed(1) + '%' + (h.outputDevice ? ' · ' + h.outputDevice : '') + (h.muted === true ? ' · MUTED' : (h.masterVolume != null ? ' · vol ' + h.masterVolume + '%' : ''));
         else if (h.process) s = 'App on, music not playing';
         else s = 'App not working';
         c.addEventListener('mouseenter', (e) => showTip(e, `${o.label} · ${t} · ${s}`));
@@ -1998,7 +2044,7 @@
         const t = pad(h.hour) + ':00';
         let s;
         if (h.audio === null) s = 'No data';
-        else if (h.audio) s = (h.outputKind === 'laptop' ? 'Playing on LAPTOP speaker' : 'Playing on Bluetooth') + ' · peak ' + ((h.peak || 0) * 100).toFixed(1) + '%' + (h.outputDevice ? ' · ' + h.outputDevice : '');
+        else if (h.audio) s = (h.outputKind === 'laptop' ? 'Playing on LAPTOP speaker' : 'Playing on Bluetooth') + ' · peak ' + ((h.peak || 0) * 100).toFixed(1) + '%' + (h.outputDevice ? ' · ' + h.outputDevice : '') + (h.muted === true ? ' · MUTED' : (h.masterVolume != null ? ' · vol ' + h.masterVolume + '%' : ''));
         else if (h.process) s = 'App on, music not playing';
         else s = 'App not working';
         c.addEventListener('mouseenter', (e) => showTip(e, `${o.label} · ${t} · ${s}`));
